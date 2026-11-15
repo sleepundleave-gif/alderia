@@ -1,0 +1,224 @@
+/* Unités d'écran : --vw, --vh, --vmin remplacent vw, vh, vmin dans l'interface (elle est mise à l'échelle : voir js/ecran.js).
+   --eg, --ed, --eh, --eb : marges de l'encoche (gauche, droite, haut, bas). */
+:root { --vw: 1vw; --vh: 1vh; --vmin: 1vmin; --eg: 0px; --ed: 0px; --eh: 0px; --eb: 0px; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color: #f4ecd8;
+  font-family: Georgia, 'Times New Roman', serif; user-select: none; -webkit-user-select: none; touch-action: none; }
+#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+#ui { position: fixed; inset: 0; pointer-events: none; font-size: clamp(14px, calc(2.1 * var(--vmin)), 20px); }
+#ui > * { pointer-events: none; }
+.hidden { display: none !important; }
+button { font-family: inherit; font-size: inherit; color: inherit; cursor: pointer; }
+
+.panel, #dlg, #choice, #bMenu, #bParty, #bMsg, #bEnemies, #menuBox, #hint, #objective {
+  background: linear-gradient(180deg, rgba(22,28,60,.94), rgba(12,15,36,.94));
+  border: 2px solid #d9b866; border-radius: 10px; box-shadow: 0 4px 18px rgba(0,0,0,.5);
+}
+
+/* HUD */
+#hud { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: 10px; gap: 10px; }
+#objective { padding: 7px 12px; max-width: 62%; font-size: .92em; }
+#objective b { color: #ffd97a; }
+#hudRight { display: flex; gap: 8px; align-items: center; pointer-events: auto; }
+#gold { background: rgba(12,15,36,.85); border: 1px solid #d9b866; border-radius: 8px; padding: 6px 10px; color: #ffd97a; }
+.hudBtn { pointer-events: auto; width: 2.5em; height: 2.5em; border-radius: 8px; border: 2px solid #d9b866; background: rgba(22,28,60,.92); font-size: 1.05em; }
+.hudBtn.off { opacity: .45; text-decoration: line-through; }
+
+#hint { position: absolute; top: 4.2em; left: 50%; transform: translateX(-50%); padding: 8px 14px; max-width: 86%; text-align: center; border-color: #8fd0ff; font-size: .95em; }
+#prompt { position: absolute; bottom: 22%; left: 50%; transform: translateX(-50%); padding: 6px 16px; background: rgba(0,0,0,.72); border: 1px solid #ffd97a; border-radius: 20px; color: #ffd97a; white-space: nowrap; }
+#toasts { position: absolute; top: 7.5em; right: 10px; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+.toast { background: rgba(12,15,36,.92); border: 1px solid #d9b866; border-radius: 8px; padding: 6px 12px; animation: toastIn .25s ease-out; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: none; } }
+
+/* Dialogue */
+#dlg { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); width: min(880px, 94%); min-height: 6.6em; padding: 1.2em 1.1em .9em; pointer-events: auto !important; }
+#dlgName { position: absolute; top: -1em; left: 14px; padding: 2px 14px; background: #d9b866; color: #1a1430; border-radius: 6px; font-weight: bold; letter-spacing: .04em; }
+#dlgName:empty { display: none; }
+#dlgText { line-height: 1.45; font-size: 1.08em; white-space: pre-wrap; }
+#dlgText i { color: #cfc6ff; }
+#dlgNext { position: absolute; right: 12px; bottom: 6px; color: #ffd97a; animation: bob 0.8s infinite alternate; }
+@keyframes bob { from { transform: translateY(0); } to { transform: translateY(4px); } }
+
+#choice { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(520px, 90%); padding: 14px; pointer-events: auto !important; max-height: 86%; overflow: auto; }
+#choiceQ { margin-bottom: 10px; color: #ffd97a; line-height: 1.35; white-space: pre-wrap; }
+.opt { display: block; width: 100%; text-align: left; margin: 5px 0; padding: 9px 12px; background: rgba(255,255,255,.06); border: 1px solid rgba(217,184,102,.45); border-radius: 7px; }
+.opt small { display: block; opacity: .72; font-size: .82em; margin-top: 2px; }
+.opt.sel { background: rgba(217,184,102,.28); border-color: #ffd97a; }
+.opt:disabled { opacity: .4; cursor: default; }
+.opt .r { float: right; color: #ffd97a; }
+
+/* Combat */
+#battle { position: absolute; inset: 0; }
+#bFlash, #bTint { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
+#bTint { transition: opacity .35s; }
+#bMsg { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: min(760px, 92%); padding: 9px 14px; text-align: center; min-height: 2.6em; line-height: 1.35; }
+#bEnemies { position: absolute; top: 4.6em; right: 10px; padding: 6px 10px; font-size: .9em; min-width: 11em; }
+.eRow { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
+.eRow .bar { flex: 1; min-width: 4em; }
+.eRow.dead { opacity: .3; }
+#bBottom { position: absolute; left: 10px; right: 10px; bottom: 10px; display: flex; gap: 10px; align-items: flex-end; justify-content: space-between; }
+#bMenu { width: min(330px, 46%); padding: 8px; pointer-events: auto !important; max-height: calc(58 * var(--vh)); overflow: auto; }
+#bMenu:empty { visibility: hidden; }
+#bMenu .who { color: #ffd97a; font-weight: bold; margin: 0 4px 6px; }
+#bParty { padding: 8px 12px; min-width: min(300px, 50%); }
+.pRow { margin: 4px 0; }
+/* Équipe de quatre : PV et PM sur une seule ligne, pour que le panneau tienne sur un petit écran */
+#bParty.quatre { min-width: min(430px, 56%); padding: 6px 10px; }
+#bParty.quatre .pRow { margin: 2px 0; display: grid; grid-template-columns: 5.2em 1fr; align-items: center; gap: 6px; }
+#bParty.quatre .pName { display: block; }
+#bParty.quatre .pName span { display: block; font-size: .72em; }
+#bParty.quatre .pBars { grid-template-columns: 1.6em 1fr 4.2em 1.6em 1fr 3.2em; font-size: .8em; }
+.pRow.act .pName { color: #ffd97a; }
+.pRow.ko { opacity: .45; }
+.pName { font-weight: bold; display: flex; justify-content: space-between; }
+.pName span { font-weight: normal; font-size: .85em; color: #ffb37a; }
+.pBars { display: grid; grid-template-columns: 2.2em 1fr 4.6em; gap: 2px 6px; align-items: center; font-size: .85em; }
+.bar { height: .62em; background: #2a2440; border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,.2); }
+.bar > i { display: block; height: 100%; background: linear-gradient(90deg, #4fd06a, #a6f07a); transition: width .3s; }
+.bar.mp > i { background: linear-gradient(90deg, #4f8fe0, #8fd0ff); }
+.bar.low > i { background: linear-gradient(90deg, #e04f4f, #ff9a6a); }
+#dmg { position: absolute; inset: 0; overflow: hidden; }
+.dmgNum { position: absolute; font-weight: bold; font-size: 2.1em; color: #fff; text-shadow: 0 0 6px #000, 2px 2px 0 #000, -1px -1px 0 #000; animation: dmgUp 1s ease-out forwards; transform: translate(-50%, -50%); white-space: nowrap; }
+.dmgNum.heal { color: #8ef59a; } .dmgNum.crit { color: #ffd23a; font-size: 2.4em; } .dmgNum.weak { color: #ff8a4a; } .dmgNum.miss { color: #bbb; font-size: 1.4em; }
+@keyframes dmgUp { 0% { opacity: 0; margin-top: 8px; transform: translate(-50%, -50%) scale(.4); } 14% { opacity: 1; margin-top: -16px; transform: translate(-50%, -50%) scale(1.4); } 28% { transform: translate(-50%, -50%) scale(1); } 70% { opacity: 1; } 100% { opacity: 0; margin-top: -72px; transform: translate(-50%, -50%) scale(1); } }
+
+/* Menu pause */
+#menu { position: absolute; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; pointer-events: auto !important; }
+#menuBox { width: min(680px, 94%); max-height: 90%; overflow: auto; padding: 16px; pointer-events: auto; }
+#menuBox h3 { margin: 0 0 10px; color: #ffd97a; }
+.tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.tabs button { padding: 7px 12px; background: rgba(255,255,255,.06); border: 1px solid rgba(217,184,102,.45); border-radius: 7px; }
+.tabs button.on { background: rgba(217,184,102,.3); border-color: #ffd97a; }
+.heroCard { border: 1px solid rgba(217,184,102,.4); border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+.heroCard .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px 10px; font-size: .88em; margin-top: 6px; opacity: .92; }
+.heroCard .sk { font-size: .85em; opacity: .85; margin-top: 6px; line-height: 1.4; }
+
+/* Écrans pleins */
+#fade { position: absolute; inset: 0; background: #000; opacity: 0; transition: opacity .6s; }
+#narr { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8%; font-size: 1.35em; line-height: 1.6; font-style: italic; color: #f4ecd8; pointer-events: auto !important; white-space: pre-wrap; }
+#card { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: rgba(0,0,0,.82); animation: toastIn .6s; }
+#cardNum { color: #d9b866; letter-spacing: .3em; text-transform: uppercase; font-size: 1em; }
+#cardTitle { font-size: clamp(26px, calc(6 * var(--vmin)), 54px); margin-top: .3em; padding: 0 5%; }
+
+#title { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, rgba(10,12,30,.35), rgba(5,6,16,.8)); pointer-events: auto !important; }
+#titleBox { text-align: center; padding: 20px; max-width: 760px; }
+#titleSmall { color: #d9b866; letter-spacing: .25em; text-transform: uppercase; font-size: .85em; }
+#title h1 { font-size: clamp(44px, calc(12 * var(--vmin)), 110px); margin: .1em 0 0; letter-spacing: .12em; color: #fff4c2; text-shadow: 0 0 30px rgba(255,217,122,.65), 0 4px 0 #6b4a12; }
+#title h2 { font-size: clamp(18px, calc(4 * var(--vmin)), 34px); margin: 0 0 1em; font-weight: normal; font-style: italic; color: #f4ecd8; text-shadow: 0 2px 6px #000; }
+#titleBtns { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-bottom: 1.3em; }
+#titleBtns button { width: min(320px, calc(80 * var(--vw))); padding: 12px; font-size: 1.15em; background: linear-gradient(180deg, rgba(30,40,90,.95), rgba(14,18,46,.95)); border: 2px solid #d9b866; border-radius: 10px; }
+#titleBtns button:hover, #titleBtns button.sel { background: linear-gradient(180deg, #5b4a1a, #3a2d0c); }
+#titleHelp { font-size: .82em; line-height: 1.6; opacity: .88; background: rgba(0,0,0,.45); border-radius: 8px; padding: 8px 12px; }
+
+/* Tactile */
+#touch { position: absolute; inset: 0; }
+#joy { position: absolute; left: 22px; bottom: 26px; width: 124px; height: 124px; border-radius: 50%; background: rgba(255,255,255,.12); border: 2px solid rgba(255,255,255,.4); pointer-events: auto !important; touch-action: none; }
+#joyKnob { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%; background: rgba(255,255,255,.55); }
+#btnA { position: absolute; right: 28px; bottom: 44px; width: 82px; height: 82px; border-radius: 50%; background: rgba(217,184,102,.5); border: 3px solid #ffd97a; font-size: 1.8em; font-weight: bold; color: #fff; pointer-events: auto !important; touch-action: none; }
+#btnA:active { background: rgba(255,217,122,.85); }
+body.dialog #touch, body.nohud #touch { display: none; }
+
+#err { position: fixed; left: 0; right: 0; bottom: 0; background: #7a1010; color: #fff; font: 12px monospace; padding: 4px 8px; display: none; z-index: 99; white-space: pre-wrap; }
+
+/* Écran bas (téléphone en paysage) : classe posée par js/ecran.js d'après la hauteur de l'interface mise à l'échelle */
+body.bas #ui { font-size: 13px; }
+body.bas #dlg { min-height: 5em; bottom: 6px; }
+body.bas #joy { width: 104px; height: 104px; bottom: 12px; }
+body.bas #btnA { width: 70px; height: 70px; bottom: 20px; }
+
+#galLink { display: inline-block; margin-top: 12px; color: #fff4c2; font-size: .95em; text-decoration: none; border: 1px solid #d9b866; border-radius: 8px; padding: 6px 14px; background: rgba(14,18,46,.8); }
+#galLink:hover { background: #3a2d0c; }
+
+/* Création du héros (vocation, apparence) */
+#perso { position: absolute; inset: 0; display: flex; align-items: stretch; pointer-events: auto !important; }
+#persoZone { flex: 1 1 0; min-width: 0; min-height: 0; position: relative; touch-action: none; cursor: grab; pointer-events: auto; }
+#persoAide { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); font-size: .82em; opacity: .7; background: rgba(0,0,0,.45); padding: 4px 12px; border-radius: 14px; white-space: nowrap; }
+#persoPanel { flex: 0 0 min(500px, 54%); margin: 12px; padding: 14px 16px; overflow: auto; pointer-events: auto; touch-action: pan-y;
+  background: linear-gradient(180deg, rgba(22,28,60,.94), rgba(12,15,36,.94)); border: 2px solid #d9b866; border-radius: 10px; box-shadow: 0 4px 18px rgba(0,0,0,.5); }
+#persoPanel h3 { margin: 0 0 4px; color: #ffd97a; font-size: 1.25em; }
+#persoSous { margin: 0 0 10px; font-size: .86em; opacity: .85; line-height: 1.35; }
+#persoFiche { margin-top: 8px; padding: 10px 12px; background: rgba(0,0,0,.28); border-radius: 8px; font-size: .9em; }
+.pDesc { margin: 0 0 8px; line-height: 1.4; }
+.pStats { display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 4px 8px; align-items: center; font-size: .86em; }
+.pBarre { display: block; height: .62em; background: rgba(255,255,255,.12); border-radius: 4px; overflow: hidden; }
+.pBarre b { display: block; height: 100%; background: linear-gradient(90deg, #d9b866, #ffe9a8); }
+.pArme { margin: 8px 0 4px; color: #ffd97a; }
+.pSk { margin: 0; padding-left: 1.1em; line-height: 1.45; } .pSk small { opacity: .75; }
+.pLigne { display: flex; align-items: center; gap: 6px; padding: 3px 6px; border: 1px solid transparent; border-radius: 7px; }
+.pLigne.sel { background: rgba(217,184,102,.2); border-color: #ffd97a; }
+.pLigne .l { flex: 0 0 5.6em; font-size: .92em; }
+.pLigne .v { flex: 1; text-align: center; display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; align-items: center; min-height: 1.9em; }
+.pLigne .v small { flex-basis: 100%; opacity: .75; font-size: .76em; line-height: 1; }
+.pFl { flex: 0 0 auto; width: 2em; height: 2em; border-radius: 6px; border: 1px solid rgba(217,184,102,.6); background: rgba(255,255,255,.07); font-size: 1.05em; line-height: 1; }
+.pFl:hover { background: rgba(217,184,102,.3); }
+.pSw { width: 1.45em; height: 1.45em; border-radius: 50%; border: 2px solid rgba(255,255,255,.3); padding: 0; }
+.pSw.vide { background: repeating-linear-gradient(45deg, rgba(255,255,255,.2) 0 3px, transparent 3px 6px); }
+.pSw.on { border-color: #fff; box-shadow: 0 0 0 2px #ffd97a; }
+#persoPanel.look { display: flex; flex-direction: column; overflow: hidden; }
+#persoPanel.look #persoCorps { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+#persoLignes { flex: 1 1 0; min-height: 0; overflow: auto; touch-action: pan-y; }
+#persoBoutons { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+#persoBoutons .opt { flex: 1 1 30%; margin: 0; text-align: center; padding: 7px 8px; }
+#persoBoutons .opt.fort { flex-basis: 100%; padding: 10px; }
+#persoBoutons .opt.fort { background: linear-gradient(180deg, #6b561c, #3a2d0c); border-color: #ffd97a; font-size: 1.08em; text-align: center; }
+#persoBoutons .opt.fort.sel { background: linear-gradient(180deg, #8a7024, #54410f); }
+@media (orientation: portrait) {
+  #perso { flex-direction: column; }
+  #persoPanel { flex: 0 0 58%; margin: 8px; }
+}
+@media (orientation: landscape) {
+  body.bas #persoPanel { margin: 6px; padding: 8px 10px; }
+  body.bas #persoFiche { padding: 6px 8px; } body.bas .pSk { display: none; }
+}
+
+/* ---------- Encoches : les fonds vont jusqu'au bord de l'écran, leur contenu reste dans la zone sûre ---------- */
+#fade, #card, #title, #menu, #narr, #bTint, #bFlash, #majEcran { left: calc(-1 * var(--eg)); right: calc(-1 * var(--ed)); top: calc(-1 * var(--eh)); bottom: calc(-1 * var(--eb)); }
+#card, #title, #menu, #majEcran { padding: var(--eh) var(--ed) var(--eb) var(--eg); }
+#narr { padding: calc(8% + var(--eh)) calc(8% + var(--ed)) calc(8% + var(--eb)) calc(8% + var(--eg)); }
+
+/* ---------- Tactile : des boutons assez grands pour le doigt ---------- */
+body.tactile .hudBtn { width: 3em; height: 3em; font-size: 1.1em; }
+body.tactile .opt { padding: 10px 12px; }
+body.tactile .tabs button { padding: 9px 14px; }
+body.tactile #titleHelp .aideClavier, body.app #galLink { display: none; }
+#titleVersion { margin-top: 8px; font-size: .78em; opacity: .75; min-height: 1em; }
+
+/* ---------- Écran titre sur un écran bas : tout tient sans défiler ---------- */
+body.bas #titleBox { padding: 8px 20px; }
+body.bas #title h1 { font-size: 46px; }
+body.bas #title h2 { font-size: 17px; margin-bottom: .6em; }
+body.bas #titleBtns { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: .8em; }
+body.bas #titleBtns button { width: 290px; padding: 9px; font-size: 1.08em; margin: 0; }
+body.bas #titleHelp { padding: 5px 10px; line-height: 1.45; }
+body.bas #galLink { margin-top: 8px; padding: 4px 12px; }
+
+/* ---------- Mises à jour (application Android) ---------- */
+#majEcran { position: absolute; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.6); pointer-events: auto !important; }
+#majBoite { width: min(620px, 94%); max-height: 96%; overflow: auto; padding: 12px 16px; pointer-events: auto;
+  background: linear-gradient(180deg, rgba(22,28,60,.96), rgba(12,15,36,.96)); border: 2px solid #d9b866; border-radius: 10px; box-shadow: 0 4px 18px rgba(0,0,0,.5); }
+#majBoite h3 { margin: 0 0 6px; color: #ffd97a; }
+#majBoite p { margin: 0 0 8px; line-height: 1.4; }
+#majBoite .majAide { font-size: .88em; opacity: .9; }
+.majLigne { display: flex; gap: 8px; align-items: stretch; margin: 5px 0; }
+.majLigne input { flex: 1 1 0; min-width: 0; padding: 8px 10px; border-radius: 7px; border: 1px solid rgba(217,184,102,.6); background: rgba(0,0,0,.35); color: #f4ecd8; font: inherit; user-select: text; -webkit-user-select: text; pointer-events: auto; }
+.majLigne .opt { flex: 0 0 auto; width: auto; margin: 0; }
+#majEtat { min-height: 2.6em; margin: 6px 2px; font-size: .92em; line-height: 1.35; }
+#majEtat.bon { color: #a6f07a; } #majEtat.mauvais { color: #ffb0a0; }
+#majEtat .bar { margin-top: 5px; height: .7em; }
+/* Un panneau ouvert (menu, boutique, dialogue) : l'objectif et les boutons du haut s'effacent au lieu de transparaître derrière */
+body.dialog #hud { visibility: hidden; }
+/* Combat sur un écran bas : le menu d'action monte plus haut, pour que « Fuite » soit visible sans défiler */
+body.bas #bMenu { max-height: calc(82 * var(--vh)); }
+
+/* ---------- Compteur d'images (Options) et alerte « pas de puce graphique » ---------- */
+#compteur { position: absolute; left: 50%; top: 2px; transform: translateX(-50%); z-index: 70; padding: 2px 9px; border-radius: 0 0 7px 7px; background: rgba(0,0,0,.6); color: #cfe8a0; font: 11px/1.4 monospace; white-space: nowrap; pointer-events: none; }
+#titleAlerte { margin-top: 6px; font-size: .82em; color: #ffc9a0; max-width: 620px; margin-left: auto; margin-right: auto; line-height: 1.35; }
+#titleAlerte:empty { display: none; }
+#titleBtns .opt small { display: block; font-size: .7em; opacity: .75; margin-top: 2px; }
+
+/* Annonce d'une nouvelle version (écran titre et écran des mises à jour) */
+#titleNouveau { margin-top: 6px; font-size: .9em; color: #ffe08a; font-weight: bold; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+#titleNouveau:empty, #majNouveau:empty { display: none; }
+#majNouveau { color: #ffe08a; font-weight: bold; }
+button.opt.neuf { border-color: #ffe08a; box-shadow: 0 0 0 2px rgba(255,224,138,.45), 0 0 14px rgba(255,224,138,.35); }
+

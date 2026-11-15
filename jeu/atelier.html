@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Aldéria — L'atelier des personnages</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #10142a; font-family: Georgia, 'Times New Roman', serif; color: #f4ecd8; }
+  #app { display: flex; height: 100%; }
+  #view { position: relative; flex: 1; min-width: 0; min-height: 0; }
+  canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+  #who { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+  #name { min-width: 200px; text-align: center; font-size: clamp(18px, 3.4vmin, 28px); color: #fff4c2; padding: 5px 18px 7px; border: 2px solid #d9b866; border-radius: 12px; background: rgba(14,18,46,.9); }
+  #name small { display: block; font-size: .5em; color: #e6cf94; letter-spacing: .05em; }
+  #hint { position: absolute; left: 12px; bottom: 10px; font-size: 13px; opacity: .85; background: rgba(14,18,46,.7); padding: 4px 10px; border-radius: 8px; pointer-events: none; }
+  #panel { width: 400px; max-width: 46vw; display: flex; flex-direction: column; background: linear-gradient(180deg, #1a2148, #10142a); border-left: 2px solid #d9b866; }
+  #steps { display: flex; gap: 4px; padding: 10px 10px 0; }
+  #steps button { flex: 1; padding: 8px 0; border-radius: 8px 8px 0 0; border-bottom: none; font-size: 1.05em; opacity: .7; }
+  #steps button.on { opacity: 1; }
+  #body { flex: 1; overflow-y: auto; padding: 14px 16px 10px; border-top: 2px solid #d9b866; }
+  #body h2 { margin: 0 0 8px; font-size: 1.3em; color: #fff4c2; }
+  #body p { margin: 0 0 10px; line-height: 1.45; font-size: .97em; }
+  .unity { border-left: 3px solid #d9b866; background: rgba(217,184,102,.12); padding: 7px 10px; border-radius: 0 8px 8px 0; font-size: .92em; line-height: 1.4; margin: 0 0 12px; }
+  .unity b { color: #fff4c2; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 0 12px; }
+  .stats div { background: rgba(0,0,0,.3); border-radius: 8px; padding: 6px 10px; font-size: .88em; }
+  .stats b { display: block; font-size: 1.35em; color: #fff4c2; font-family: Verdana, sans-serif; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+  .chips span { font-family: Verdana, sans-serif; font-size: 11.5px; background: rgba(0,0,0,.32); border-radius: 20px; padding: 3px 9px; display: inline-flex; align-items: center; gap: 5px; }
+  .chips i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  #pal { image-rendering: pixelated; width: 128px; height: 128px; border: 2px solid #d9b866; border-radius: 6px; background: #000; flex: none; }
+  ol { margin: 0 0 12px; padding-left: 20px; line-height: 1.5; font-size: .93em; }
+  code { font-family: Consolas, Menlo, monospace; font-size: .9em; background: rgba(0,0,0,.35); padding: 1px 5px; border-radius: 4px; }
+  button, a.btn { font: inherit; color: #f4ecd8; text-decoration: none; padding: 8px 13px; border: 2px solid #d9b866; border-radius: 10px; background: linear-gradient(180deg, rgba(30,40,90,.95), rgba(14,18,46,.95)); cursor: pointer; }
+  button:hover, a.btn:hover, button.on { background: linear-gradient(180deg, #5b4a1a, #3a2d0c); }
+  button.big { font-size: 1.08em; padding: 11px 16px; width: 100%; margin-bottom: 8px; }
+  #foot { display: flex; gap: 8px; padding: 10px; border-top: 1px solid rgba(217,184,102,.4); }
+  #foot > * { flex: 1; text-align: center; font-size: .92em; padding: 8px 4px; }
+  #msg { font-size: .9em; min-height: 1.3em; color: #e6cf94; margin: 0 0 8px; }
+  @media (max-aspect-ratio: 1/1) {
+    #app { flex-direction: column; }
+    #view { flex: none; height: 46%; }
+    #panel { width: 100%; max-width: none; flex: 1; min-height: 0; border-left: none; border-top: 2px solid #d9b866; }
+    #name { min-width: 150px; }
+    #hint { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="view">
+    <canvas id="c"></canvas>
+    <div id="who"><button id="prev" aria-label="Personnage précédent">◀</button><div id="name"></div><button id="next" aria-label="Personnage suivant">▶</button></div>
+    <div id="hint">Glisser pour tourner le personnage</div>
+  </div>
+  <div id="panel">
+    <div id="steps"></div>
+    <div id="body"></div>
+    <div id="foot"><button id="back">◀ Étape</button><button id="fwd">Étape ▶</button><a class="btn" href="galerie.html">Galerie</a><a class="btn" href="index.html">Jeu</a></div>
+  </div>
+</div>
+<script type="module">
+import * as THREE from './lib/three.module.min.js';
+import { GLTFLoader } from './lib/GLTFLoader.js';
+import { makeChar, makeClips, toRestPose, CHARS, makeWolf, makeMushroom, makeFirefly, makeHorse } from './js/chars.js';
+import { toGLB, makePalette, colorsOf, CATALOGUE, exportEntry } from './js/export.js';
+
+const NAMES = { kael: ['Kael', 'Héros — apprenti forgeron'], lyra: ['Lyra', "Héroïne — élève mage d'Ysmère"], hagen: ['Hagen', 'Forgeron de Brumeval'], mira: ['Mira', "Fille de l'aubergiste"], aubin: ['Chef Aubin', 'Brumeval'], odile: ['Vieille Odile', 'Brumeval'], gaspard: ['Gaspard', 'Aubergiste'], boulanger: ['Le boulanger', 'Brumeval'], enfant1: ['Un enfant', 'Brumeval'], enfant2: ['Une enfant', 'Brumeval'], villageois1: ['Un villageois', 'Brumeval'], villageoise1: ['La marchande', 'Brumeval'], soldat: ['Soldat de Cendre', 'Ennemi'], krall: ['Sergent Krall', 'Boss du chapitre 1'], darian: ['Le Chevalier Noir', '???'], garde: ['Garde de Solméria', 'Relais du Cerf Blanc'], berthe: ['Berthe', 'Relais du Cerf Blanc'], colporteur: ['Le colporteur', 'Relais du Cerf Blanc'], anselme: ['Père Anselme', 'Ermite des Murmures'], gobelin: ['Gobelin', 'Ennemi'], troll: ['Troll des Murmures', 'Boss du chapitre 2'] };
+const CREATURES = { loup: makeWolf, champignon: makeMushroom, luciole: makeFirefly, cheval: () => makeHorse() };
+Object.assign(NAMES, { loup: ['Loup gris', 'Créature — ennemi'], champignon: ['Champignon hurleur', 'Créature — ennemi'], luciole: ['Luciole de braise', 'Créature — ennemi'], cheval: ['Cheval', 'Créature'] });
+const KEYS = [...Object.keys(CHARS), ...Object.keys(CREATURES)];
+const BONE_FR = { Root: 'Racine', Hips: 'Bassin', Spine: 'Buste', Head: 'Tête', LeftUpperLeg: 'Cuisse G', LeftLowerLeg: 'Jambe G', LeftFoot: 'Pied G', RightUpperLeg: 'Cuisse D', RightLowerLeg: 'Jambe D', RightFoot: 'Pied D', LeftUpperArm: 'Bras G', LeftLowerArm: 'Avant-bras G', LeftHand: 'Main G', RightUpperArm: 'Bras D', RightLowerArm: 'Avant-bras D', RightHand: 'Main D', Cape: 'Cape', Body: 'Corps', Neck: 'Encolure', Tail: 'Queue', Cap: 'Chapeau', LegFL: 'Patte avant G', LegFR: 'Patte avant D', LegBL: 'Patte arrière G', LegBR: 'Patte arrière D', WingL: 'Aile G', WingR: 'Aile D' };
+const BONE_COL = { Root: 0x888888, Hips: 0xe8c040, Spine: 0x3fa35a, Head: 0xf2f2f2, LeftUpperLeg: 0x8a5ad0, LeftLowerLeg: 0x30c0c8, LeftFoot: 0x8a6a4a, RightUpperLeg: 0x8a5ad0, RightLowerLeg: 0x30c0c8, RightFoot: 0x8a6a4a, LeftUpperArm: 0x3a78e0, LeftLowerArm: 0xf08a2a, LeftHand: 0xe04a8a, RightUpperArm: 0x3a78e0, RightLowerArm: 0xf08a2a, RightHand: 0xe04a8a, Cape: 0xc03030, Body: 0xe8c040, Neck: 0xf2f2f2, Tail: 0xc03030, Cap: 0x3fa35a, LegFL: 0x3a78e0, LegFR: 0x30c0c8, LegBL: 0x8a5ad0, LegBR: 0xf08a2a, WingL: 0x3a78e0, WingR: 0x30c0c8 };
+const $ = (id) => document.getElementById(id);
+const q = new URLSearchParams(location.search);
+const fmt = (n) => n.toLocaleString('fr-FR');
+
+// ---------- Scène ----------
+const canvas = $('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x9cc4e4); scene.fog = new THREE.Fog(0x9cc4e4, 30, 70);
+scene.add(new THREE.HemisphereLight(0xdfefff, 0x6a7a4a, 1.0));
+const sun = new THREE.DirectionalLight(0xfff2d8, 1.5); sun.position.set(-8, 20, 14); scene.add(sun);
+const ground = new THREE.Mesh(new THREE.CircleGeometry(60, 40), new THREE.MeshLambertMaterial({ color: 0x6aa84f })); ground.rotation.x = -Math.PI / 2; scene.add(ground);
+const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 200);
+function resize() { const w = canvas.clientWidth, h = canvas.clientHeight; renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); frameCamera(); }
+function frameCamera() { const h = obj ? obj.userData.height : 1.75, tall = camera.aspect < 0.8 ? 0.8 / camera.aspect : 1; camera.position.set(0, h * 0.62, (h * 2.3 + 1.6) * tall); camera.lookAt(0, h * 0.5, 0); }
+addEventListener('resize', resize);
+
+// Matériaux de démonstration
+const M_CLAY = new THREE.MeshLambertMaterial({ color: 0xcfd6e4 });
+const M_WIRE = new THREE.MeshBasicMaterial({ color: 0x1a2a66, wireframe: true });
+const M_GHOST = new THREE.MeshLambertMaterial({ color: 0xbfd0f0, transparent: true, opacity: 0.32, depthWrite: false });
+const M_WEIGHT = new THREE.MeshBasicMaterial({ vertexColors: true });
+const M_BONE = new THREE.MeshBasicMaterial({ color: 0xfff4c2, depthTest: false, transparent: true });
+const M_JOINT = new THREE.MeshBasicMaterial({ color: 0xff7a2a, depthTest: false, transparent: true });
+
+// ---------- État ----------
+let idx = Math.max(0, KEYS.indexOf(q.get('k'))), step = Math.min(6, Math.max(1, +(q.get('etape') || 1)));
+let obj = null, rig = null, clips = [], mixer = null, action = null, wire = null, helpers = [], weightGeo = null, toonMat = null, palette = null;
+let angle = +(q.get('ry') || 0.5), spinning = q.get('spin') !== '0', drag = null, t = 0, buildT = 0, building = false, total = 0, fileObj = null, fileMixer = null, lastExport = null;
+
+function clearHelpers() { helpers.forEach((h) => h.parent && h.parent.remove(h)); helpers = []; }
+function loadChar(i) {
+  idx = (i + KEYS.length) % KEYS.length;
+  if (obj) { clearHelpers(); scene.remove(obj); }
+  if (fileObj) { scene.remove(fileObj); fileObj = null; fileMixer = null; }
+  const key = KEYS[idx];
+  obj = CREATURES[key] ? CREATURES[key]() : makeChar(key); rig = obj.userData.rig; scene.add(obj);
+  toonMat = rig.mesh.material; total = rig.mesh.geometry.attributes.position.count;
+  clips = makeClips(obj); mixer = new THREE.AnimationMixer(obj); action = null;
+  mixer.addEventListener('finished', (e) => { if (step === 5 || step === 6) setTimeout(() => { if (action === e.action) play('Repos'); }, e.action.getClip().name === 'KO' ? 900 : 0); });
+  palette = makePalette(colorsOf(obj));
+  wire = new THREE.SkinnedMesh(rig.mesh.geometry, M_WIRE); wire.frustumCulled = false; wire.bind(rig.skeleton, rig.mesh.bindMatrix); wire.visible = false; obj.add(wire);
+  weightGeo = null; lastExport = null;
+  const [n, sub] = NAMES[key] || [key, ''];
+  $('name').innerHTML = n + '<small>' + sub + '</small>';
+  frameCamera(); setStep(step);
+}
+
+// Couleurs des poids : chaque os a sa teinte, un sommet partagé entre deux os prend le mélange
+function makeWeightGeo() {
+  const g = rig.mesh.geometry, si = g.attributes.skinIndex, sw = g.attributes.skinWeight, n = si.count, col = new Float32Array(n * 3), c = new THREE.Color(), d = new THREE.Color();
+  const cols = rig.bones.map((b) => new THREE.Color(BONE_COL[b.name] ?? 0x888888));
+  for (let i = 0; i < n; i++) { c.copy(cols[si.getX(i)]).multiplyScalar(sw.getX(i)); d.copy(cols[si.getY(i)]).multiplyScalar(sw.getY(i)); col[i * 3] = c.r + d.r; col[i * 3 + 1] = c.g + d.g; col[i * 3 + 2] = c.b + d.b; }
+  const w = new THREE.BufferGeometry();
+  for (const k of ['position', 'normal', 'skinIndex', 'skinWeight']) w.setAttribute(k, g.attributes[k]);
+  w.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  return w;
+}
+// Os dessinés : une pointe du parent vers l'enfant, une bille à chaque articulation
+function showBones() {
+  const k = obj.userData.k, ball = new THREE.SphereGeometry(1, 10, 8), stick = new THREE.CylinderGeometry(0.35, 1, 1, 6); stick.translate(0, 0.5, 0);
+  const up = new THREE.Vector3(0, 1, 0);
+  for (const b of rig.bones) {
+    if (b.name === 'Root') continue;
+    const j = new THREE.Mesh(ball, M_JOINT); j.scale.setScalar(0.026 * Math.max(0.75, k)); j.renderOrder = 11; b.add(j); helpers.push(j);
+    if (b.parent && b.parent.isBone && b.parent.name !== 'Root') {
+      const len = b.position.length(); if (len < 1e-4) continue;
+      const s = new THREE.Mesh(stick, M_BONE); s.scale.set(0.022 * Math.max(0.75, k), len, 0.022 * Math.max(0.75, k)); s.quaternion.setFromUnitVectors(up, b.position.clone().normalize()); s.renderOrder = 10; b.parent.add(s); helpers.push(s);
+    }
+  }
+  // extrémités : tête, mains, pieds, cape
+  const tips = { Head: [0, 0.24, 0], LeftHand: [0, -0.09, 0], RightHand: [0, -0.09, 0], LeftFoot: [0, -0.08, 0.14], RightFoot: [0, -0.08, 0.14], Cape: [0, -0.5, -0.12] };
+  for (const b of rig.bones) if (tips[b.name]) {
+    const v = new THREE.Vector3(...tips[b.name]).multiplyScalar(k), s = new THREE.Mesh(stick, M_BONE);
+    s.scale.set(0.022 * Math.max(0.75, k), v.length(), 0.022 * Math.max(0.75, k)); s.quaternion.setFromUnitVectors(up, v.clone().normalize()); s.renderOrder = 10; b.add(s); helpers.push(s);
+  }
+}
+function play(name) {
+  const clip = clips.find((c) => c.name === name); if (!clip) return;
+  const next = mixer.clipAction(clip); next.reset(); next.setLoop(clip.userData.loop ? THREE.LoopRepeat : THREE.LoopOnce, Infinity); next.clampWhenFinished = true;
+  if (action && action !== next) next.crossFadeFrom(action, 0.15, false);
+  next.play(); action = next;
+  document.querySelectorAll('[data-clip]').forEach((b) => b.classList.toggle('on', b.dataset.clip === name));
+}
+function startBuild() { building = true; buildT = 0; }
+
+// ---------- Les six étapes ----------
+const STEPS = [null,
+  { n: '1', title: 'Le maillage', html: () => `
+      <p>Un personnage 3D est une <b>peau faite de triangles</b>. Je ne sculpte pas à la souris : j'écris les formes — un profil que l'on fait tourner pour le buste, les bras et les jambes, des sphères pour la tête, les yeux et les cheveux — puis je soude le tout en un seul maillage.</p>
+      <div class="unity"><b>Dans Unity :</b> c'est le <b>Mesh</b>, affiché par un <i>Skinned Mesh Renderer</i>.</div>
+      <div class="stats"><div><b>${fmt(total / 3)}</b>triangles</div><div><b>${rig.pieces}</b>formes soudées</div></div>
+      <button class="big" id="rebuild">▶ Revoir la construction</button>
+      <p style="opacity:.8;font-size:.88em">Les formes apparaissent dans l'ordre où le code les pose : buste, jambes, bras, tête, visage, cheveux, accessoires.</p>` },
+  { n: '2', title: 'Couleurs et texture', html: () => `
+      <p>Chaque forme reçoit une <b>couleur</b>. Toutes les couleurs du personnage sont rangées dans une petite image, la <b>palette</b> : c'est sa texture. Le style dessin animé vient de deux réglages du <b>matériau</b> : des ombres en aplats et un contour à l'encre.</p>
+      <div class="unity"><b>Dans Unity :</b> un <b>Material</b> et sa <b>Texture</b>.</div>
+      <div class="row" style="align-items:center"><canvas id="pal"></canvas><div style="flex:1;min-width:120px"><div class="stats" style="grid-template-columns:1fr"><div><b>${palette.colors.length}</b>couleurs dans la palette</div><div><b>${palette.canvas.width} × ${palette.canvas.height}</b>pixels de texture</div></div></div></div>
+      <div class="row"><button id="tgToon" class="on">Ombres en aplats</button><button id="tgLine" class="on">Contour</button></div>` },
+  { n: '3', title: 'Le squelette', html: () => `
+      <p>À l'intérieur de la peau, je place des <b>os</b>. Chaque os est un pivot : le tourner fait bouger tout ce qui lui est attaché, comme l'avant-bras et la main quand on plie le coude.${obj.userData.P.weapon ? " L'arme est simplement accrochée à l'os de la main droite." : ''}${obj.userData.creature ? ' Une créature a le sien : un os par patte, un pour la queue, un pour la tête.' : ''}</p>
+      <div class="unity"><b>Dans Unity :</b> la hiérarchie d'os du modèle (le <b>Rig</b>, ou <i>Avatar</i>).</div>
+      <div class="stats"><div><b>${rig.bones.length}</b>os</div><div><b>${obj.userData.height.toFixed(2).replace('.', ',')} m</b>de haut</div></div>
+      <div class="row chips">${rig.bones.map((b) => `<span>${BONE_FR[b.name] || b.name}</span>`).join('')}</div>` },
+  { n: '4', title: 'Les poids', html: () => `
+      <p>Il faut dire à chaque point de la peau <b>quel os il suit</b>. Les couleurs le montrent. ${obj.userData.creature ? "Chez cette créature, chaque pièce suit <b>un seul os</b>, comme les pièces d'une marionnette : les couleurs sont donc franches, sans dégradé." : "Près du coude, du genou et de la taille, les points suivent <b>deux os à la fois</b> : c'est le dégradé, et c'est lui qui permet de plier sans cassure."}</p>
+      <div class="unity"><b>Dans Unity :</b> les <b>Bone Weights</b> du maillage. On appelle cette étape le <i>skinning</i>.</div>
+      <div class="row chips">${(obj.userData.creature ? rig.bones.filter((b) => b.name !== 'Root').map((b) => [BONE_FR[b.name] || b.name, b.name]) : [['Bassin', 'Hips'], ['Buste', 'Spine'], ['Tête', 'Head'], ['Bras', 'LeftUpperArm'], ['Avant-bras', 'LeftLowerArm'], ['Main', 'LeftHand'], ['Cuisse', 'LeftUpperLeg'], ['Jambe', 'LeftLowerLeg'], ['Pied', 'LeftFoot']].concat(obj.userData.P.cape ? [['Cape', 'Cape']] : [])).map(([l, b]) => `<span><i style="background:#${BONE_COL[b].toString(16).padStart(6, '0')}"></i>${l}</span>`).join('')}</div>
+      <p style="opacity:.8;font-size:.88em">${obj.userData.creature ? 'La créature bouge au ralenti pour montrer quelles pièces suivent quel os.</p>' : ''}<p style="opacity:.8;font-size:.88em;${obj.userData.creature ? 'display:none' : ''}">Le personnage plie les bras, les genoux et la taille pour montrer le fondu.</p>` },
+  { n: '5', title: 'Les animations', html: () => `
+      <p>Une animation est une <b>suite de poses</b> enregistrées os par os, 30 fois par seconde. Chaque suite est un <b>clip</b>. Le moteur passe de l'un à l'autre en fondu.</p>
+      <div class="unity"><b>Dans Unity :</b> des <b>Animation Clips</b>, joués par un <b>Animator</b>.</div>
+      <div class="row">${clips.map((c) => `<button data-clip="${c.name}">${c.userData.label}</button>`).join('')}</div>
+      <div class="stats"><div><b>${clips.length}</b>clips</div><div><b>${fmt(clips.reduce((n, c) => n + c.tracks[0].times.length, 0))}</b>poses enregistrées</div></div>` },
+  { n: '6', title: "Le fichier : l'asset", html: () => `
+      <p>Tout est rangé dans <b>un seul fichier .glb</b> : maillage, texture, squelette, poids, animations et contour. C'est un format standard : Unity, Blender ou Godot l'ouvrent.</p>
+      <button class="big" id="dl">⬇ Télécharger ${KEYS[idx]}.glb</button>
+      <div id="msg"></div>
+      <div class="row"><button id="tgFile">Voir le fichier relu</button></div>
+      <div class="unity"><b>Pour l'ouvrir dans Unity :</b>
+        <ol style="margin:6px 0 0"><li><i>Window ▸ Package Manager ▸ + ▸ Add package by name</i>, puis <code>com.unity.cloud.gltfast</code></li><li>Glisser le fichier <code>.glb</code> dans le dossier <i>Assets</i></li><li>Glisser l'asset dans la scène : le maillage, les os et les clips sont là</li></ol></div>
+      <p style="opacity:.8;font-size:.88em">Le <b>contour à l'encre</b> est dans le fichier : c'est une seconde peau noire, à peine plus grande et retournée (l'objet « Contour »). Pour s'en passer, il suffit de la supprimer. Les <b>ombres en aplats</b>, elles, dépendent du moteur : dans Unity, il faut un matériau « toon ».</p>` },
+];
+
+function setStep(s) {
+  step = Math.min(6, Math.max(1, s));
+  const P = obj.userData.P;
+  // tout remettre à zéro
+  clearHelpers(); mixer.stopAllAction(); action = null; obj.userData.pose = false; toRestPose(obj);
+  if (fileObj) { scene.remove(fileObj); fileObj = null; fileMixer = null; }
+  obj.visible = true; building = false;
+  rig.mesh.geometry.setDrawRange(0, Infinity); rig.mesh.material = toonMat; rig.outline.visible = true; wire.visible = false;
+  rig.mesh.geometry = rig.outline.geometry; if (P.weapon) P.weapon.visible = true;
+  obj.traverse((m) => { if (m.userData.outline) m.visible = true; });
+  // panneau
+  $('steps').innerHTML = STEPS.slice(1).map((d, i) => `<button data-step="${i + 1}" class="${i + 1 === step ? 'on' : ''}" title="${d.title}">${d.n}</button>`).join('');
+  $('body').innerHTML = `<h2>${STEPS[step].n}. ${STEPS[step].title}</h2>` + STEPS[step].html();
+  $('body').scrollTop = 0;
+  document.querySelectorAll('[data-step]').forEach((b) => { b.onclick = () => setStep(+b.dataset.step); });
+  $('back').disabled = step === 1; $('fwd').disabled = step === 6;
+  // affichage propre à l'étape
+  if (step === 1) {
+    rig.mesh.material = M_CLAY; wire.visible = true; obj.traverse((m) => { if (m.userData.outline) m.visible = false; });
+    $('rebuild').onclick = startBuild; if (q.get('build') !== '0') startBuild();
+  } else if (step === 2) {
+    const pc = $('pal'); pc.width = palette.canvas.width; pc.height = palette.canvas.height; pc.getContext('2d').drawImage(palette.canvas, 0, 0);
+    $('tgToon').onclick = (e) => { const on = e.target.classList.toggle('on'); rig.mesh.material = on ? toonMat : M_WEIGHT; };
+    $('tgLine').onclick = (e) => { const on = e.target.classList.toggle('on'); obj.traverse((m) => { if (m.userData.outline) m.visible = on; }); };
+  } else if (step === 3) {
+    rig.mesh.material = M_GHOST; obj.traverse((m) => { if (m.userData.outline) m.visible = false; }); showBones();
+  } else if (step === 4) {
+    if (!weightGeo) weightGeo = makeWeightGeo();
+    rig.mesh.geometry = weightGeo; rig.mesh.material = M_WEIGHT; if (P.weapon) P.weapon.visible = false;
+  } else if (step === 5) {
+    document.querySelectorAll('[data-clip]').forEach((b) => { b.onclick = () => play(b.dataset.clip); });
+    play(q.get('clip') || 'Marche');
+  } else if (step === 6) {
+    play('Repos');
+    $('dl').onclick = download; $('tgFile').onclick = toggleFile;
+    if (lastExport) showExportStats();
+  }
+}
+function showExportStats() {
+  const s = lastExport.stats;
+  $('msg').innerHTML = `Fichier créé : <b>${fmt(Math.round(s.bytes / 1024))} Ko</b> — ${fmt(s.triangles)} triangles${s.outlineTriangles ? ' (dont ' + fmt(s.outlineTriangles) + ' pour le contour)' : ''}, ${fmt(s.vertices)} sommets, ${s.bones} os, ${s.clips.length} clips, ${s.colors} couleurs.`;
+}
+async function doExport() {
+  if (!lastExport) { mixer.stopAllAction(); action = null; lastExport = await toGLB(obj, KEYS[idx]); play('Repos'); }
+  return lastExport;
+}
+async function download() {
+  $('msg').textContent = 'Fabrication du fichier…';
+  try {
+    const e = await doExport();
+    const url = URL.createObjectURL(new Blob([e.buffer], { type: 'model/gltf-binary' })), a = document.createElement('a');
+    a.href = url; a.download = KEYS[idx] + '.glb'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
+    showExportStats();
+  } catch (err) { $('msg').textContent = 'Erreur : ' + err.message; }
+}
+// Relit le fichier .glb comme le ferait un autre logiciel, et joue le clip « Marche » qu'il contient
+async function toggleFile() {
+  if (fileObj) { scene.remove(fileObj); fileObj = null; fileMixer = null; obj.visible = true; $('tgFile').classList.remove('on'); $('tgFile').textContent = 'Voir le fichier relu'; return; }
+  $('msg').textContent = 'Lecture du fichier…';
+  try {
+    const e = await doExport();
+    const gltf = await new GLTFLoader().parseAsync(e.buffer.slice(0), '');
+    fileObj = gltf.scene; fileObj.traverse((m) => { if (m.isMesh) m.frustumCulled = false; }); scene.add(fileObj); obj.visible = false;
+    fileMixer = new THREE.AnimationMixer(fileObj); const walk = gltf.animations.find((c) => c.name === 'Marche') || gltf.animations[0]; if (walk) fileMixer.clipAction(walk).play();
+    $('tgFile').classList.add('on'); $('tgFile').textContent = 'Revenir au modèle du jeu';
+    showExportStats(); $('msg').innerHTML += '<br>Ci-contre : le fichier relu, avec son clip « Marche ».';
+  } catch (err) { $('msg').textContent = 'Erreur : ' + err.message; }
+}
+
+// ---------- Commandes ----------
+$('prev').onclick = () => loadChar(idx - 1); $('next').onclick = () => loadChar(idx + 1);
+$('back').onclick = () => setStep(step - 1); $('fwd').onclick = () => setStep(step + 1);
+addEventListener('keydown', (e) => { if (e.key === 'ArrowLeft') loadChar(idx - 1); if (e.key === 'ArrowRight') loadChar(idx + 1); if (e.key === 'ArrowUp') setStep(step - 1); if (e.key === 'ArrowDown') setStep(step + 1); });
+canvas.addEventListener('pointerdown', (e) => { drag = e.clientX; spinning = false; });
+addEventListener('pointermove', (e) => { if (drag !== null) { angle += (e.clientX - drag) * 0.012; drag = e.clientX; } });
+addEventListener('pointerup', () => { drag = null; });
+
+// ---------- Boucle ----------
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+  if (spinning) angle += dt * 0.5;
+  const P = obj.userData.P;
+  obj.rotation.y = angle; if (fileObj) fileObj.rotation.y = angle;
+  if (step === 5 || step === 6) { mixer.update(dt); if (fileMixer) fileMixer.update(dt); }
+  else if (step === 4) {                                    // démonstration : plier coudes, genoux et taille
+    toRestPose(obj); if (obj.userData.creature) { const d = obj.userData.clips.Marche; d.pose(P, obj.userData, (t * 0.35) % d.dur); }
+    else { const a = (1 - Math.cos(t * 1.6)) / 2, b = (1 - Math.cos(t * 1.6 + 1.8)) / 2;
+    P.armL.rotation.z = 0.5; P.armR.rotation.z = -0.5; P.elbowL.rotation.x = -1.9 * a; P.elbowR.rotation.x = -1.9 * b;
+    P.legL.rotation.x = -0.9 * b; P.kneeL.rotation.x = 1.5 * b; P.spine.rotation.y = Math.sin(t * 0.8) * 0.5; P.spine.rotation.x = Math.sin(t * 1.1) * 0.15; }
+  } else if (step === 1) { toRestPose(obj); if (P.armL) { P.armL.rotation.z = 0.28; P.armR.rotation.z = -0.28; } }
+  else obj.userData.anim(dt, false, t);
+  if (building) {                                           // les triangles apparaissent dans l'ordre de fabrication
+    buildT += dt; const n = Math.min(total, Math.floor(total * Math.pow(Math.min(1, buildT / 4.5), 1.3) / 3) * 3);
+    rig.mesh.geometry.setDrawRange(0, n); if (P.weapon) P.weapon.visible = n >= total;
+    if (n >= total) { building = false; rig.mesh.geometry.setDrawRange(0, Infinity); }
+  }
+  renderer.render(scene, camera); window.__ready = true;
+  requestAnimationFrame(frame);
+}
+loadChar(idx); resize();
+requestAnimationFrame(frame);
+
+// Pour fabriquer tous les fichiers d'un coup (utilisé pour remplir le dossier assets/)
+window.__atelier = { CATALOGUE, exportEntry, setStep, loadChar, toGLB, get state() { return { step, key: KEYS[idx], total }; } };
+</script>
+</body>
+</html>

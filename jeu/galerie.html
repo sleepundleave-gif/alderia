@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Aldéria — Galerie des personnages</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #1a2038; font-family: Georgia, 'Times New Roman', serif; color: #f4ecd8; }
+  canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  #bar { position: absolute; left: 0; right: 0; bottom: 14px; display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; padding: 0 10px; }
+  #name { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); text-align: center; white-space: nowrap; font-size: clamp(20px, 5vmin, 32px); color: #fff4c2; pointer-events: none; padding: 6px 22px 8px; border: 2px solid #d9b866; border-radius: 12px; background: rgba(14,18,46,.88); }
+  #name small { display: block; font-size: .5em; color: #e6cf94; letter-spacing: .06em; }
+  button, a.btn { font: inherit; font-size: 1.05em; color: #f4ecd8; text-decoration: none; padding: 10px 16px; border: 2px solid #d9b866; border-radius: 10px; background: linear-gradient(180deg, rgba(30,40,90,.95), rgba(14,18,46,.95)); cursor: pointer; }
+  button:hover, a.btn:hover, button.on { background: linear-gradient(180deg, #5b4a1a, #3a2d0c); }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="name"></div>
+<div id="bar">
+  <button id="prev">◀ Précédent</button>
+  <button id="walk">Marcher</button>
+  <button id="spin" class="on">Tourner</button>
+  <button id="next">Suivant ▶</button>
+  <a class="btn" href="index.html">Retour au jeu</a>
+</div>
+<script type="module">
+import * as THREE from './lib/three.module.min.js';
+import { makeChar, makeWolf, makeMushroom, makeFirefly, makeHorse } from './js/chars.js';
+
+const LIST = [
+  ['kael', 'Kael', 'Héros — apprenti forgeron'], ['lyra', 'Lyra', "Héroïne — élève mage d'Ysmère"], ['hagen', 'Hagen', 'Forgeron de Brumeval'], ['mira', 'Mira', "Fille de l'aubergiste"],
+  ['aubin', 'Chef Aubin', 'Brumeval'], ['odile', 'Vieille Odile', 'Brumeval'], ['gaspard', 'Gaspard', 'Aubergiste'], ['boulanger', 'Le boulanger', 'Brumeval'],
+  ['enfant1', 'Un enfant', 'Brumeval'], ['enfant2', 'Une enfant', 'Brumeval'], ['villageois1', 'Un villageois', 'Brumeval'], ['villageoise1', 'La marchande', 'Brumeval'],
+  ['anselme', 'Père Anselme', 'Ermite des Bois des Murmures'], ['berthe', 'Berthe', 'Relais du Cerf Blanc'], ['colporteur', 'Le colporteur', 'Relais du Cerf Blanc'], ['garde', 'Garde de Solméria', 'Relais du Cerf Blanc'],
+  ['soldat', 'Soldat de Cendre', 'Ennemi'], ['krall', 'Sergent Krall', 'Boss du chapitre 1'], ['darian', 'Le Chevalier Noir', '???'],
+  ['loup', 'Loup gris', 'Ennemi'], ['gobelin', 'Gobelin', 'Ennemi'], ['champignon', 'Champignon hurleur', 'Ennemi'], ['luciole', 'Luciole de braise', 'Ennemi'], ['troll', 'Troll des Murmures', 'Boss du chapitre 2'], ['cheval', 'Cheval', ''],
+];
+const BUILD = { loup: makeWolf, champignon: makeMushroom, luciole: makeFirefly, cheval: makeHorse };
+const q = new URLSearchParams(location.search);
+const canvas = document.getElementById('c');
+const r = new THREE.WebGLRenderer({ canvas, antialias: true });
+const sc = new THREE.Scene(); sc.background = new THREE.Color(0x9cc4e4); sc.fog = new THREE.Fog(0x9cc4e4, 30, 70);
+sc.add(new THREE.HemisphereLight(0xdfefff, 0x6a7a4a, 1.0));
+const sun = new THREE.DirectionalLight(0xfff2d8, 1.5); sun.position.set(-8, 20, 14); sc.add(sun);
+const ground = new THREE.Mesh(new THREE.CircleGeometry(60, 40), new THREE.MeshLambertMaterial({ color: 0x6aa84f })); ground.rotation.x = -Math.PI / 2; sc.add(ground);
+const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 200);
+function resize() { r.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); r.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); }
+addEventListener('resize', resize); resize();
+
+let idx = Math.max(0, LIST.findIndex(l => l[0] === q.get('k'))), obj = null, walking = q.get('walk') === '1', spinning = q.get('spin') !== '0', angle = +(q.get('ry') || 0.5), t = 0;
+function show(i) {
+  idx = (i + LIST.length) % LIST.length;
+  if (obj) sc.remove(obj);
+  const [key, name, sub] = LIST[idx];
+  obj = (BUILD[key] || (() => makeChar(key)))(); sc.add(obj);
+  const h = key === 'cheval' ? 2.5 : (obj.userData.height || 1.75);
+  const tall = innerHeight > innerWidth ? 1.55 : 1;
+  cam.position.set(0, h * 0.62, (h * 2.3 + 1.6) * tall); cam.lookAt(0, h * 0.5, 0);
+  document.getElementById('name').innerHTML = name + (sub ? '<small>' + sub + '</small>' : '');
+}
+const $ = (id) => document.getElementById(id);
+$('prev').onclick = () => show(idx - 1); $('next').onclick = () => show(idx + 1);
+$('walk').onclick = () => { walking = !walking; $('walk').classList.toggle('on', walking); };
+$('spin').onclick = () => { spinning = !spinning; $('spin').classList.toggle('on', spinning); };
+$('walk').classList.toggle('on', walking); $('spin').classList.toggle('on', spinning);
+addEventListener('keydown', (e) => { if (e.key === 'ArrowLeft') show(idx - 1); if (e.key === 'ArrowRight') show(idx + 1); });
+// Glisser pour tourner le personnage à la main
+let drag = null;
+canvas.addEventListener('pointerdown', (e) => { drag = e.clientX; });
+addEventListener('pointermove', (e) => { if (drag !== null) { angle += (e.clientX - drag) * 0.012; drag = e.clientX; } });
+addEventListener('pointerup', () => { drag = null; });
+show(idx);
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+  if (spinning && drag === null) angle += dt * 0.6;
+  obj.rotation.y = angle;
+  if (obj.userData.anim) obj.userData.anim(dt, walking, t);
+  r.render(sc, cam); window.__ready = true;
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

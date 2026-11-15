@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nom">Aldéria</string>
+    <!-- Adresse du dossier des mises à jour en ligne (https://…/). Le jeu y regarde à chaque lancement (avec connexion) s'il existe une version plus récente. -->
+    <string name="adresse_maj" translatable="false">https://sleepundleave-gif.github.io/alderia/maj/</string>
+    <color name="fond">#0d1018</color>
+    <color name="fond_icone">#141a3c</color>
+    <style name="Jeu" parent="@android:style/Theme.Black.NoTitleBar.Fullscreen">
+        <item name="android:windowBackground">@color/fond</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+    </style>
+</resources>

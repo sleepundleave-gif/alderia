@@ -1,0 +1,6 @@
+# la clé de signature ne se publie pas
+android/cle/
+*.jks
+*.keystore
+__pycache__/
+node_modules/

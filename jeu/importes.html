@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ALDÉRIA — modèles importés</title>
+<style>
+  html,body{margin:0;height:100%;background:#1a2238;color:#f4ecd4;font:15px system-ui,sans-serif;overflow:hidden}
+  canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  #top{position:fixed;left:0;right:0;top:0;padding:10px 14px;background:rgba(14,18,46,.86);border-bottom:1px solid #d9b866;z-index:2}
+  #top b{color:#ffe08a} #top a{color:#ffe08a}
+  #bar{position:fixed;left:0;right:0;bottom:0;padding:8px 10px;background:rgba(14,18,46,.9);border-top:1px solid #d9b866;z-index:2;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-height:42vh;overflow:auto}
+  button{font:inherit;color:#f4ecd4;background:#2a3158;border:1px solid #6a74a8;border-radius:7px;padding:6px 10px;cursor:pointer}
+  button.on{background:#6a4c12;border-color:#ffd97a;color:#fff}
+  .sep{flex-basis:100%;height:0}
+  #info{position:fixed;right:10px;top:74px;background:rgba(14,18,46,.8);border:1px solid #6a74a8;border-radius:8px;padding:8px 12px;z-index:2;max-width:270px;font-size:13.5px;line-height:1.45}
+  #load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:3;background:#1a2238}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="load">Chargement des modèles…</div>
+<div id="top"><b>Modèles importés</b> — personnages faits par un artiste (packs gratuits de Quaternius, licence CC0, les mêmes fichiers que pour Unity). Glisser pour tourner, molette ou pincer pour zoomer. <a href="index.html">Retour au jeu</a> · <a href="atelier.html">Atelier des anciens modèles</a></div>
+<div id="info"></div>
+<div id="bar"></div>
+<script type="module">
+import * as THREE from './lib/three.module.min.js';
+import { loadPack, makeChar, HEROES3D, envFor, clipNames } from './js/pack.js';
+import { loadDecor, groundMat } from './js/decor.js';
+const q = new URLSearchParams(location.search), $ = (id) => document.getElementById(id);
+const NOMS = { kael: 'Kael', lyra: 'Lyra', hagen: 'Hagen', mira: 'Mira', aubin: 'Aubin', odile: 'Odile', gaspard: 'Gaspard', boulanger: 'Boulanger', enfant1: 'Tom', enfant2: 'Lison', villageois1: 'Villageois', villageoise1: 'Villageoise', soldat: 'Soldat de Cendre', krall: 'Krall', darian: 'Darian', garde: 'Garde', berthe: 'Berthe', colporteur: 'Colporteur', anselme: 'Anselme', gobelin: 'Gobelin', troll: 'Troll' , nyssa: 'Nyssa', borin: 'Borin', roi: 'Roi Aldemar', alinor: 'Princesse Alinor', aldric: 'Aldric', renaud: 'Garde Renaud', gontran: 'Maître Gontran', ysolde: 'Dame Ysolde', hotesse: 'Aubergiste', citadin1: 'Citadin', citadin2: 'Marchand', citadin3: 'Vieux citadin', citadine1: 'Citadine', citadine2: 'Marchande', citadine3: 'Lavandière', noble: 'Noble', noble_f: 'Dame noble', tobie: 'Tobie le mendiant', pretre: "Prêtre de l'Aube", gamin: 'Gamin des rues' };
+const CLIPS = { Idle_Loop: 'Repos', Walk_Loop: 'Marche', Jog_Fwd_Loop: 'Course', Sword_Idle: 'En garde', Sword_Attack: "Coup d'épée", Punch_Cross: 'Coup de poing', Spell_Simple_Shoot: 'Sort', Hit_Chest: 'Touché', Death01: 'K.-O.', Idle_Talking_Loop: 'Discussion', Sitting_Idle_Loop: 'Assis', Roll: 'Roulade' };
+const r = new THREE.WebGLRenderer({ canvas: $('c'), antialias: true }); r.setPixelRatio(Math.min(2, devicePixelRatio));
+const sc = new THREE.Scene(); sc.background = new THREE.Color(0x9fd0ff); sc.fog = new THREE.Fog(0xbfe0ff, 30, 90);
+sc.add(new THREE.HemisphereLight(0xffffff, 0x7a9a5a, 1.05)); const sun = new THREE.DirectionalLight(0xfff0c8, 1.4); sun.position.set(6, 10, 8); sc.add(sun);
+const cam = new THREE.PerspectiveCamera(35, 1, 0.1, 200);
+let pa = 0, pb = 0; const prog = () => { $('load').textContent = 'Chargement des modèles… ' + Math.round((pa + pb) * 50) + ' %'; };
+try { await Promise.all([loadPack((k) => { pa = k; prog(); }), loadDecor((k) => { pb = k; prog(); })]); }
+catch (e) { $('load').innerHTML = '<div style="text-align:center;max-width:480px;padding:20px;line-height:1.6">Les modèles n\'ont pas pu être téléchargés en entier : la connexion a coupé plusieurs fois de suite.<br><br><button onclick="location.reload()">Réessayer</button> &nbsp; <a href="index.html" style="color:#ffe08a">Retour au jeu</a></div>'; throw e; }
+sc.environment = envFor(r, 0x9fd0ff, 0x7a9a5a, 1);
+const ground = new THREE.Mesh(new THREE.CircleGeometry(60, 40), groundMat(0x6fae4f)); ground.rotation.x = -Math.PI / 2; sc.add(ground);
+let cur = null, key = q.get('k') || 'kael', clip = q.get('clip') || 'Idle_Loop', yaw = +(q.get('ry') || 0.5), pitch = 0.12, dist = 5.2, spin = q.get('spin') !== '0', armed = false;
+function show(k) {
+  if (cur) sc.remove(cur); key = k; cur = makeChar(k); sc.add(cur); armed = !!cur.userData.armed; play(clip);
+  let tris = 0, bones = 0, meshes = 0; cur.traverse((m) => { if (m.isMesh && !m.userData.shadow) { tris += (m.geometry.index ? m.geometry.index.count : m.geometry.attributes.position.count) / 3; meshes++; } if (m.isSkinnedMesh) bones = m.skeleton.bones.length; });
+  const o = HEROES3D[k];
+  $('info').innerHTML = `<b style="color:#ffe08a">${NOMS[k] || k}</b><br>${Math.round(tris).toLocaleString('fr-FR')} triangles · ${bones} os · ${meshes} pièces<br>Costume : ${o.outfit === 'Ranger' ? 'rôdeur' : 'paysan'}${o.dye != null ? ', tissu reteint' : ''}<br>Tête et cheveux : fichiers séparés, liés au même squelette<br>Textures : couleur, relief (normal map), rugosité/métal`;
+  for (const b of document.querySelectorAll('[data-k]')) b.classList.toggle('on', b.dataset.k === k);
+}
+function play(c) {
+  clip = c; const u = cur.userData; u.pose = false; u.stop();
+  if (/_Loop$|Sword_Idle/.test(c)) { u.idle = c; u.forced = c; } else { u.idle = armed ? 'Sword_Idle' : 'Idle_Loop'; u.forced = null; u.play(c, c === 'Death01' ? { hold: true } : {}); }
+  for (const b of document.querySelectorAll('[data-c]')) b.classList.toggle('on', b.dataset.c === c);
+}
+const bar = $('bar');
+for (const k of Object.keys(HEROES3D)) { const b = document.createElement('button'); b.textContent = NOMS[k] || k; b.dataset.k = k; b.onclick = () => show(k); bar.appendChild(b); }
+bar.appendChild(Object.assign(document.createElement('div'), { className: 'sep' }));
+for (const c of Object.keys(CLIPS)) { const b = document.createElement('button'); b.textContent = CLIPS[c]; b.dataset.c = c; b.onclick = () => play(c); bar.appendChild(b); }
+const bw = document.createElement('button'); bw.textContent = 'Dégainer / rengainer'; bw.onclick = () => { armed = !armed; cur.userData.draw(armed); play('Idle_Loop'); if (armed) play('Sword_Idle'); }; bar.appendChild(bw);
+show(key);
+// caméra : glisser pour tourner, molette / pincement pour zoomer
+let drag = null; const pts = new Map(); const cv = $('c');
+cv.addEventListener('pointerdown', (e) => { pts.set(e.pointerId, e); drag = { x: e.clientX, y: e.clientY }; spin = false; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointermove', (e) => {
+  if (!pts.has(e.pointerId)) return;
+  if (pts.size === 2) { const [a, b] = [...pts.values()], d0 = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); pts.set(e.pointerId, e); const [c, d] = [...pts.values()], d1 = Math.hypot(c.clientX - d.clientX, c.clientY - d.clientY); dist = Math.min(12, Math.max(1.2, dist * d0 / Math.max(1, d1))); return; }
+  pts.set(e.pointerId, e); yaw -= (e.clientX - drag.x) * 0.008; pitch = Math.min(1.2, Math.max(-0.1, pitch + (e.clientY - drag.y) * 0.005)); drag = { x: e.clientX, y: e.clientY };
+});
+for (const ev of ['pointerup', 'pointercancel']) cv.addEventListener(ev, (e) => pts.delete(e.pointerId));
+cv.addEventListener('wheel', (e) => { dist = Math.min(12, Math.max(1.2, dist * (e.deltaY > 0 ? 1.1 : 0.9))); e.preventDefault(); }, { passive: false });
+function size() { r.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); } addEventListener('resize', size); size();
+let last = performance.now(), t = 0;
+function loop(now) {
+  requestAnimationFrame(loop); const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+  if (spin) yaw += dt * 0.35;
+  const u = cur.userData, moving = u.forced === 'Walk_Loop' || u.forced === 'Jog_Fwd_Loop';
+  if (moving) { u.idle = u.forced; } u.anim(dt, false, t);
+  const h = u.height * 0.55; cam.position.set(Math.sin(yaw) * Math.cos(pitch) * dist, h + Math.sin(pitch) * dist, Math.cos(yaw) * Math.cos(pitch) * dist); cam.lookAt(0, h - dist * 0.13, 0);
+  r.render(sc, cam);
+}
+$('load').remove(); requestAnimationFrame(loop); window.__ready = true;
+</script></body></html>

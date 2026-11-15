@@ -1,0 +1,14 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:8000",
+      "localStorage": [
+        {
+          "name": "alderia_save_v1",
+          "value": "{\"v\":1,\"party\":[{\"id\":\"kael\",\"level\":9,\"xp\":0,\"hp\":135,\"mp\":34,\"weapon\":\"epee_hagen\",\"armor\":\"gilet_cuir\",\"ring\":\"anneau_vigueur\"},{\"id\":\"lyra\",\"level\":9,\"xp\":0,\"hp\":88,\"mp\":58,\"weapon\":\"baton_noisetier\",\"armor\":\"tunique_voyage\"},{\"id\":\"nyssa\",\"level\":9,\"xp\":0,\"hp\":100,\"mp\":34,\"weapon\":\"dague_silex\",\"armor\":\"veste_ombre\"},{\"id\":\"borin\",\"level\":9,\"xp\":0,\"hp\":177,\"mp\":22,\"weapon\":\"masse_borin\",\"armor\":\"armure_garde\",\"ring\":\"bouclier_granit\"}],\"gold\":1450,\"inv\":{\"potion\":10,\"ether\":6,\"antidote\":5,\"pendentif\":1,\"laissez_passer\":1,\"tente\":1,\"dagues_nyssa\":1,\"miroir\":1},\"flags\":{\"heros\":{\"classe\":\"epeiste\",\"look\":null},\"intro1\":1,\"c_forge\":1,\"epee\":1,\"mira\":1,\"loup1\":1,\"tutoSkill\":1,\"m_loup2\":1,\"loups\":1,\"m_loup3\":1,\"c_bois\":1,\"feu_intro\":1,\"soldat1\":1,\"m_sold_a\":1,\"m_sold_b\":1,\"krall\":1,\"c_barque\":1,\"tutoRonces\":1,\"ronces0\":1,\"m_g1\":1,\"ronces1\":1,\"tutoElem\":1,\"m_g2\":1,\"m_g3\":1,\"c_fer\":1,\"ronces2\":1,\"m_c1\":1,\"m_c2\":1,\"m_c4\":1,\"m_c3\":1,\"anselme\":1,\"anselmePotions\":1,\"camp\":1,\"troll\":1,\"relais_intro\":1,\"berthe\":1,\"c_ecurie\":1,\"fin\":1,\"ch3_intro\":1,\"vol\":1,\"toits_intro\":1,\"m_to1\":1,\"c_toits\":1,\"m_to2\":1,\"m_to3\":1,\"toits\":1,\"egout_vu\":1,\"egouts_intro\":1,\"tuto_etat\":1,\"m_eg1\":1,\"m_eg2\":1,\"vanne_rate\":1,\"vannes\":1,\"m_eg3\":1,\"m_eg4\":1,\"m_eg5\":1,\"c_egouts\":1,\"roi_egouts\":1,\"trone\":1,\"sorti_chateau\":1,\"fin3\":1,\"ch4_intro\":1,\"m_col1\":1,\"m_col2\":1,\"m_col3\":1,\"m_col4\":1,\"m_col5\":1,\"s4_camp\":1,\"c_col_camp\":1,\"c_col_cache\":1,\"s4_porte\":1,\"s4_intro\":1,\"s4_tuto1\":1,\"m_san1\":1,\"s4_blocs\":1,\"m_san2\":1,\"s4_dalles\":1,\"s4_pont\":1,\"m_san3\":1,\"c_san_braseros\":1,\"c_san_dalles\":1,\"s4_ecl\":1,\"s4_golem\":1,\"s4_eclat\":1,\"ch4_fin\":1,\"ch5_intro\":1},\"phase\":\"ch5_col\",\"time\":118.96270000000023}"
+        }
+      ]
+    }
+  ]
+}

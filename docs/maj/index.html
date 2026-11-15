@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0d1018">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Aldéria : La Couronne d'Aube</title>
+<link rel="stylesheet" href="css/style.css" onerror="this.onerror=null;this.href='css/style.css?essai=1'">
+</head>
+<body class="nohud" style="background:#0d1018">
+<canvas id="c"></canvas>
+
+<div id="ui">
+  <div id="compteur" style="display:none"></div>
+  <!-- HUD d'exploration -->
+  <div id="hud" class="hidden">
+    <div id="objective"></div>
+    <div id="hudRight"><span id="gold"></span><button id="btnMenu" class="hudBtn" title="Menu">☰</button><button id="btnSound" class="hudBtn" title="Son">♪</button></div>
+  </div>
+  <div id="hint" class="hidden"></div>
+  <div id="prompt" class="hidden"></div>
+  <div id="toasts"></div>
+
+  <!-- Combat -->
+  <div id="battle" class="hidden">
+    <div id="bTint"></div><div id="bFlash"></div>
+    <div id="bMsg"></div>
+    <div id="bEnemies"></div>
+    <div id="bBottom">
+      <div id="bMenu"></div>
+      <div id="bParty"></div>
+    </div>
+  </div>
+  <div id="dmg"></div>
+
+  <!-- Dialogue -->
+  <div id="dlg" class="hidden">
+    <div id="dlgName"></div>
+    <div id="dlgText"></div>
+    <div id="dlgNext">▼</div>
+  </div>
+  <div id="choice" class="hidden"><div id="choiceQ"></div><div id="choiceList"></div></div>
+
+  <!-- Menu pause -->
+  <div id="menu" class="hidden"><div id="menuBox"></div></div>
+
+  <!-- Écrans pleins -->
+  <div id="fade"></div>
+  <div id="narr" class="hidden"></div>
+  <div id="card" class="hidden"><div id="cardNum"></div><div id="cardTitle"></div></div>
+
+  <div id="title" class="hidden">
+    <div id="titleBox">
+      <div id="titleSmall">Un RPG au tour par tour</div>
+      <h1>ALDÉRIA</h1>
+      <h2>La Couronne d'Aube</h2>
+      <div id="titleBtns"></div>
+      <div id="titleHelp">
+        <span class="aideClavier"><b>Clavier :</b> ZQSD / WASD ou flèches pour marcher · E ou Espace pour parler et valider · M pour le menu · glisser la souris pour tourner la caméra<br></span>
+        <b>Tactile :</b> manette à gauche · bouton A pour agir · glisser sur l'écran pour tourner la caméra
+      </div>
+      <a id="galLink" href="importes.html">Voir les nouveaux personnages de près</a>
+      <div id="titleVersion"></div>
+      <div id="titleNouveau"></div>
+      <div id="titleAlerte"></div>
+    </div>
+  </div>
+
+  <!-- Commandes tactiles -->
+  <div id="touch" class="hidden">
+    <div id="joy"><div id="joyKnob"></div></div>
+    <button id="btnA">A</button>
+  </div>
+</div>
+
+<!-- Écran de chargement : il s'affiche sans attendre le code du jeu -->
+<div id="loading" style="position:fixed;left:50%;bottom:12%;transform:translateX(-50%);width:min(420px,84vw);font:14px system-ui,sans-serif;color:#fff;text-align:center;text-shadow:0 1px 3px #000;z-index:30">
+  <b id="loadWhat" style="font-weight:normal">Chargement du jeu…</b> <span></span>
+  <div style="margin-top:8px;height:8px;border-radius:4px;background:rgba(255,255,255,.18);overflow:hidden"><i style="display:block;height:100%;width:0;background:#f2c14e;transition:width .15s"></i></div>
+  <small id="loadNote" style="display:block;margin-top:8px;min-height:2.6em;color:#ffd9a0;font-size:12px"></small>
+</div>
+<div id="err"></div>
+<script>
+// DÉMARRAGE DU CODE DU JEU
+// 1. Chaque fichier de code est d'abord téléchargé un par un, et redemandé s'il est coupé (jusqu'à 8 essais chacun).
+//    Le navigateur garde ces copies : quand le jeu est lancé juste après, il les a déjà sous la main.
+//    Chaque demande exige une copie fraîche (cache: 'reload') : après une mise à jour du jeu, le navigateur
+//    ne mélange donc jamais d'anciens fichiers avec les nouveaux, même chez un hébergeur de simples fichiers.
+// 2. Si le lancement échoue quand même, on recommence sous une adresse neuve (/v/NUMÉROr1/, r2…),
+//    pour qu'aucune mauvaise copie gardée en route ne soit resservie.
+(function () {
+  var note = document.getElementById('loadNote'), base = document.baseURI.replace(/[^/]*$/, ''), date = /\/v\/[0-9a-z]+\/$/.test(base);
+  var vus = {}, enCours = 0, rates = 0;
+  function dire(t) { try { fetch(base + 'journal', { method: 'POST', body: t, keepalive: true }).catch(function () {}); } catch (e) {} }
+  function prendre(url, n, fin) {
+    fetch(url, { cache: 'reload' }).then(function (r) { if (r.status === 404) return ''; if (!r.ok) throw new Error('réponse ' + r.status); return r.text(); }).then(fin, function (e) {
+      rates++; if (rates === 1) dire('code : ' + url.split('/').pop() + ' : ' + ((e && e.message) || e));
+      if (n >= 7) return fin('');
+      note.textContent = 'Connexion instable : le code du jeu est redemandé…';
+      setTimeout(function () { prendre(url, n + 1, fin); }, 400 + n * 500);
+    });
+  }
+  function explorer(url) {
+    if (vus[url]) return; vus[url] = 1; enCours++;
+    prendre(url, 0, function (texte) {
+      var re = /(?:from|import)\s*['"](\.{1,2}\/[^'"]+)['"]/g, m;
+      while ((m = re.exec(texte))) explorer(new URL(m[1], url).href);
+      if (!--enCours) { note.textContent = ''; lancer(0); }
+    });
+  }
+  function lancer(n) {
+    var url = !n ? base + 'js/main.js' : date ? base.replace(/\/$/, 'r' + n + '/') + 'js/main.js' : base + 'js/main.js?essai=' + n;
+    import(url).catch(function (e) {
+      var msg = String((e && e.message) || e), reseau = e instanceof TypeError && /modul|import|fetch|load/i.test(msg);
+      dire('code du jeu, lancement ' + (n + 1) + ' : ' + msg);
+      if (reseau && n < 8) { note.textContent = 'Connexion instable : le code du jeu est redemandé… (essai ' + (n + 2) + ')'; setTimeout(function () { lancer(n + 1); }, 1200 + n * 600); return; }
+      var el = document.getElementById('err'); el.style.display = 'block';
+      el.textContent = (reseau ? 'Le code du jeu n\'a pas pu être téléchargé. Vérifiez la connexion puis rechargez la page.\n' : 'Erreur au démarrage du jeu :\n') + msg;
+    });
+  }
+  if (!date) { var css = document.querySelector('link[rel=stylesheet]'); if (css) css.href = base + 'css/style.css?' + Date.now(); }   // feuille de style toujours à jour
+  if (window.fetch) explorer(base + 'js/main.js'); else lancer(0);
+})();
+</script>
+</body>
+</html>
