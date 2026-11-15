@@ -86,17 +86,21 @@ elif r.get('source', {}).get('path') != '/docs':
     c, r = api('PUT', '/repos/%s/pages' % DEPOT, {'source': {'branch': 'main', 'path': '/docs'}}); print('site réglé sur docs/ (%s)' % c)
 
 # ---- 4. la release
-tag = 'v' + nomapp + ('' if api('GET', '/repos/%s/releases/tags/v%s' % (DEPOT, nomapp))[0] == 404 else '-jeu%d' % vjeu)
-c, rel = api('GET', '/repos/%s/releases/tags/%s' % (DEPOT, tag))
+# (une release par application ; si seul le jeu a changé depuis, une release « v1.3-jeu14 »)
+titre = 'Aldéria %s — jeu version %d' % (nomapp, vjeu)
+c, rel = api('GET', '/repos/%s/releases/tags/v%s' % (DEPOT, nomapp)); tag = 'v' + nomapp
+if c == 200 and rel.get('name') != titre: tag = 'v%s-jeu%d' % (nomapp, vjeu); c, rel = api('GET', '/repos/%s/releases/tags/%s' % (DEPOT, tag))
 if c == 404:
     texte = remplacer(open(os.path.join(ICI, 'site', 'release.md'), encoding='utf-8').read())
-    c, rel = api('POST', '/repos/%s/releases' % DEPOT, {'tag_name': tag, 'target_commitish': sha, 'name': 'Aldéria %s — jeu version %d' % (nomapp, vjeu), 'body': texte, 'make_latest': 'true'})
+    c, rel = api('POST', '/repos/%s/releases' % DEPOT, {'tag_name': tag, 'target_commitish': sha, 'name': titre, 'body': texte, 'make_latest': 'true'})
     if c != 201: sys.exit('release : %s %s' % (c, rel))
 zipmaj = os.path.join(RACINE, 'mises-a-jour', 'alderia-maj-%d.zip' % vjeu)
 pieces = [(apk, 'Alderia.apk', 'application/vnd.android.package-archive'), (os.path.join(RACINE, 'Alderia-hors-ligne.html'), 'Alderia-hors-ligne.html', 'text/html'), (zipmaj, os.path.basename(zipmaj), 'application/zip')]
-deja = {a['name']: a['id'] for a in rel.get('assets', [])}
+deja = {a['name']: a['id'] for a in rel.get('assets', [])}; tailles = {a['name']: a['size'] for a in rel.get('assets', [])}
 for chemin, nom, type_ in pieces:
     if not os.path.isfile(chemin): continue
+    if tailles.get(nom) == os.path.getsize(chemin) and nom != 'Alderia.apk': print('  %s : déjà en place' % nom); continue
+    if nom == 'Alderia.apk' and nom in deja and not os.environ.get('REFAIRE') and tailles.get(nom) == os.path.getsize(chemin): print('  %s : déjà en place' % nom); continue
     if nom in deja: api('DELETE', '/repos/%s/releases/assets/%d' % (DEPOT, deja[nom]))
     c, r = api('POST', '/repos/%s/releases/%d/assets?name=%s' % (DEPOT, rel['id'], nom), hote='https://uploads.github.com', brut=open(chemin, 'rb').read(), type_=type_)
     print('  %s : %s' % (nom, 'déposé (%.1f Mo)' % (os.path.getsize(chemin) / 1048576) if c == 201 else 'ÉCHEC %s %s' % (c, r.get('message'))))

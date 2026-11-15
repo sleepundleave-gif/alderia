@@ -259,3 +259,10 @@ Le jeu saccadait sur téléphone alors qu'il ne pèse que 20 Mo : le poids du fi
 - Mesure au niveau « beaux », ville du chapitre 3 : 561 → 243 objets à dessiner par image, 1 253 000 → 615 000 triangles, mêmes matières et mêmes textures.
 - Ménage : dossiers `captures/` et `jeu/assets/` supprimés (anciennes images, anciens exports `.glb` des modèles dessinés, que `atelier.html` sait refabriquer).
 
+## Version 13 : sur GitHub, avec annonce des nouvelles versions
+
+- Dépôt : `github.com/sleepundleave-gif/alderia`. Site (GitHub Pages, dossier `docs/`) : `sleepundleave-gif.github.io/alderia/`, dont `maj/` est le dossier des mises à jour en ligne (`manifeste.txt`, les fichiers du jeu, `application.txt`).
+- Application 1.3 (`android/src/…/MainActivity.java`, `Maj.java`) : `verifier()` lit le manifeste en ligne sans rien installer et prévient la page par `window.__nouveau` ; `ouvrir()` ouvre le téléchargement de la nouvelle application. L'adresse est dans `android/res/values/valeurs.xml` (`adresse_maj`).
+- `js/ecran.js` : `ADRESSE_MAJ`, `verifierMaj`, `surAnnonce`, `texteAnnonce` ; l'écran titre (`js/main.js`) affiche l'annonce dans `#titleNouveau` et allume le bouton « Mises à jour ».
+- `android/publier.py` : envoie le tout sur GitHub et crée la release. `android/site/` : modèles de la page de téléchargement, du README et du texte de la release.
+

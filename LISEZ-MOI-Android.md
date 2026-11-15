@@ -1,6 +1,27 @@
 # Aldéria sur Android
 
-Le fichier à installer : **`Alderia.apk`** (20,8 Mo, application 1.2, jeu version 12). Il contient tout le jeu (chapitres 1 à 10, modèles, sons) : une fois installé, il fonctionne **sans connexion**.
+Le fichier à installer : **`Alderia.apk`** (20,8 Mo, application 1.3, jeu version 13). Il contient tout le jeu (chapitres 1 à 10, modèles, sons) : une fois installé, il fonctionne **sans connexion**.
+
+## Sur GitHub
+
+- Le projet : <https://github.com/sleepundleave-gif/alderia>
+- **Page de téléchargement à partager aux joueurs : <https://sleepundleave-gif.github.io/alderia/>**
+- Lien direct vers l'application (toujours la dernière) : <https://github.com/sleepundleave-gif/alderia/releases/latest/download/Alderia.apk>
+
+**Comment les joueurs sont prévenus.** À partir de l'application 1.3, à chaque lancement avec une connexion, le jeu regarde sur GitHub s'il existe une version plus récente. S'il y en a une, l'écran titre affiche « ★ Nouvelle version » et le bouton « Mises à jour » s'allume ; le joueur touche Mises à jour → Chercher en ligne et la nouveauté s'installe. Rien ne se télécharge sans son accord, et sans connexion le jeu se lance comme d'habitude.
+
+**Les anciennes applications (1.0, 1.1, 1.2)** ne regardent pas Internet d'elles-mêmes : on ne peut rien leur envoyer à distance. Deux façons de les mettre à niveau, une seule fois :
+- installer `Alderia.apk` 1.3 par-dessus (le mieux : ensuite tout est annoncé automatiquement) ;
+- ou, dans l'ancienne application : Mises à jour → taper `https://sleepundleave-gif.github.io/alderia/maj/` → Chercher en ligne. Le jeu se met à jour, mais cette ancienne application ne préviendra toujours pas d'elle-même.
+
+**Publier une nouvelle version** (nouveau chapitre, correction) :
+1. augmenter le numéro à la 1re ligne de `jeu/version.txt` ;
+2. `python3 jeu/outils/maj.py paquet` puis `sh android/construire.sh` (avec `CODE` et `NOM` augmentés si l'application elle-même a changé) ;
+3. `GITHUB_TOKEN=… python3 android/publier.py` : envoie le jeu, met le site à jour et dépose l'APK. Une à deux minutes plus tard, les téléphones l'annoncent.
+
+Le jeton GitHub n'est enregistré nulle part : il en faut un à chaque publication (GitHub → Settings → Developer settings → Personal access tokens ; la case « repo » suffit).
+
+**La clé de signature `android/cle/alderia.jks` n'est pas sur GitHub** (volontairement : quiconque l'aurait pourrait fabriquer de fausses mises à jour). Gardez-en une copie en lieu sûr : sans elle, une nouvelle application ne pourrait plus s'installer par-dessus l'ancienne.
 
 ## Installer
 
