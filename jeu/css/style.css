@@ -222,3 +222,8 @@ body.bas #bMenu { max-height: calc(82 * var(--vh)); }
 #majNouveau { color: #ffe08a; font-weight: bold; }
 button.opt.neuf { border-color: #ffe08a; box-shadow: 0 0 0 2px rgba(255,224,138,.45), 0 0 14px rgba(255,224,138,.35); }
 
+
+/* ----- Carte du lieu (menu) ----- */
+#carteVue { text-align: center; color: #cfd6e6; }
+.carteImage { display: block; margin: 0 auto; max-width: 100%; height: auto; border-radius: 8px; border: 1px solid rgba(255,217,122,.45); background: #141a26; }
+.carteLegende { margin: 8px 0 6px; font-size: 12px; line-height: 1.5; text-align: center; color: #cfd6e6; }

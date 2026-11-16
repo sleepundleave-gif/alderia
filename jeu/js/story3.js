@@ -17,12 +17,22 @@ import { brancherMaisons } from './interieurs.js';
 const PI = Math.PI;
 const F = () => G.flags;
 const near = (o, x, z, r) => Math.hypot(o.position.x - x, o.position.z - z) < r;
+// Monter à une échelle : le personnage se place face aux barreaux, puis s'élève le long des montants en bougeant bras et jambes.
+// « part » : fraction de l'échelle à monter (1 = jusqu'en haut).
+async function grimper(o, ech, ms, part = 1) {
+  const u = o.userData, x0 = ech.pied.x, z0 = ech.pied.z, dx = ech.haut.x - x0, dz = ech.haut.z - z0, h = ech.haut.y;
+  u.pose = true; o.rotation.y = ech.ry; o.position.set(x0, 0, z0); u.gy = undefined;
+  const tours = h * part / 0.8;                                 // un tour de bras = deux barreaux = 80 cm
+  await tweenS(ms, (k) => { const a = k * part; o.position.set(x0 + dx * a, Math.max(0.001, h * a), z0 + dz * a); o.rotation.y = ech.ry; if (u.grimper) u.grimper(k * tours); });
+}
+let tweenS = null;
 const sit = (o) => { if (o.userData.imported) o.userData.poseAt('Sitting_Idle_Loop', 0.4); };
 // Un guetteur : appelé à chaque image tant que le joueur est libre de ses mouvements
 function watcher(st, fn) { const g = new THREE.Group(); g.userData.anim = (dt) => { if (!E.busy && E.enabled) fn(dt); }; st.add(g); return g; }
 
 export function chapter3(T) {
   const { enter, goPhase, fight, give, chest, npc, reader, statue, mobs, tween } = T;
+  tweenS = tween;
   const P = () => T.party();
 
   // ============================================================
@@ -102,7 +112,13 @@ export function chapter3(T) {
     for (let i = 0; i < 2; i++) npc(st, 'g_pont' + i, 'garde', S.pont[i].x, S.pont[i].z, 0, 'au garde du pont', () => talk([['GARDE', apres ? "Le roi vous a reçus. Il ne vous recevra pas deux fois dans la journée." : "Le château est fermé. Pas d'audience sans convocation."]]));
 
     // ----- L'échelle des toits, la bouche d'égout -----
-    st.interact({ x: S.echelle.x, z: S.echelle.z, r: 2.4, label: "Grimper à l'échelle", cond: () => F().vol && !F().toits, action: async () => { await fade(true, 500); await goPhase('ch3_toits'); } });
+    st.interact({ x: S.echelle.x, z: S.echelle.z, r: 2.4, label: "Grimper à l'échelle", cond: () => F().vol && !F().toits, action: async () => {
+      const { kael } = P(); E.shot([S.echelle.x - 5.5, 3.4, S.echelle.z + 5], [S.echelle.haut.x, 3, S.echelle.z]);
+      await E.walk(kael, S.echelle.pied.x, S.echelle.pied.z, 3.5);
+      await Promise.all([grimper(kael, S.echelle, 2600, 0.5), sleep(1500).then(() => fade(true, 900))]);      // Kael monte les premiers barreaux, puis l'image se ferme
+      kael.userData.finGrimper && kael.userData.finGrimper(); kael.position.y = 0; E.unshot();
+      await goPhase('ch3_toits');
+    } });
     st.interact({ x: S.egout.x, z: S.egout.z, r: 2.6, label: 'Descendre dans les égouts', cond: () => F().toits && !F().trone, action: async () => {
       if (!F().egout_vu) { F().egout_vu = 1; await talk([['LYRA', "Elle a sauté là-dedans. Sans hésiter. Elle connaît le chemin."], ['KAEL', "Alors on le connaîtra aussi."], ['LYRA', "... Ça sent exactement comme je l'imaginais."]]); }
       await fade(true, 500); await goPhase('ch3_egouts');
@@ -126,10 +142,9 @@ export function chapter3(T) {
         E.face(lyra, p.x, p.z); E.face(kael, lyra.position.x, lyra.position.z);
         await talk([['LYRA', "Kael. Ton cou."], ['KAEL', "Mon... Le pendentif ! Hé ! Reviens !"]]);
         music('danger');
-        E.shot([14, 9, -2], [S.echelle.x, 3, S.echelle.z]);
-        await E.walk(voleuse, 19, -14, 11); await E.walk(voleuse, S.echelle.x, S.echelle.z, 11);
-        voleuse.userData.pose = true;
-        await tween(900, (k) => { voleuse.position.y = k * 7.4; voleuse.rotation.y = PI / 2; });
+        E.shot([15.5, 5.6, -8.4], [S.echelle.haut.x - 0.6, 3.1, S.echelle.z]);       // (assez près pour la voir monter barreau après barreau)
+        await E.walk(voleuse, 19, -14, 11); await E.walk(voleuse, S.echelle.pied.x, S.echelle.pied.z, 9);
+        await grimper(voleuse, S.echelle, 3000);                 // elle GRIMPE : mains et pieds sur les barreaux, jusqu'au bord du toit
         voleuse.visible = false; st.remove(voleuse);
         E.unshot();
         F().vol = 1;
@@ -390,7 +405,7 @@ export function chapter3(T) {
   // ============================================================
   async function ch3_trone() {
     const st = buildTrone(), S = st.spots;
-    const up = (o, s) => { o.position.y = s.y; if (o.userData.col) o.userData.col.off = true; return o; };
+    const up = (o) => { if (o.userData.col) o.userData.col.off = true; return o; };      // sur l'estrade : le moteur les pose sur la dalle (plus de hauteur écrite à la main)
     const roi = up(npc(st, 'roi', 'roi', S.roi.x, S.roi.z, 0), S.roi); sit(roi);
     const alinor = up(npc(st, 'alinor', 'alinor', S.alinor.x, S.alinor.z, -0.3), S.alinor);
     const aldric = up(npc(st, 'aldric', 'aldric', S.aldric.x, S.aldric.z, 0.3), S.aldric);
@@ -416,8 +431,8 @@ export function chapter3(T) {
       ['LYRA', "Mon maître, Théobald d'Ysmère, m'a confié une lettre pour le sage Aldric. Il est mort en la protégeant."],
     ]);
     // Aldric descend les marches et lit la lettre
-    await Promise.all([E.walk(aldric, -1.6, -32.6, 2.2), tween(1900, (k) => { aldric.position.y = S.aldric.y * (1 - k); })]);
-    aldric.position.y = 0; E.face(aldric, lyra.position.x, lyra.position.z); E.face(lyra, aldric.position.x, aldric.position.z);
+    await E.walk(aldric, -1.6, -32.6, 2.2);              // il descend les sept marches, une à une
+    E.face(aldric, lyra.position.x, lyra.position.z); E.face(lyra, aldric.position.x, aldric.position.z);
     E.shot([-4.6, 2.2, -29.4], [-1.4, 1.5, -32.4]);
     await talk([['', "Aldric lit la lettre de Théobald, lentement, en faisant tourner un anneau d'argent à son doigt."]]);
     E.face(aldric, 0, -39);

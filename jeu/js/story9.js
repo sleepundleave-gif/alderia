@@ -105,8 +105,8 @@ export function chapter9(T) {
   // ============================================================
   async function ch9_conseil() {
     const st = buildTrone(), S = st.spots;
-    const up = (o, s) => { o.position.y = s.y; if (o.userData.col) o.userData.col.off = true; return o; };
-    const roi = up(npc(st, 'roi', 'roi', S.roi.x, S.roi.z + 1.2, 0), S.roi);
+    const up = (o) => { if (o.userData.col) o.userData.col.off = true; return o; };      // sur l'estrade : le moteur les pose sur la dalle (plus de hauteur écrite à la main)
+    const roi = up(npc(st, 'roi', 'roi', S.roiDebout.x, S.roiDebout.z, 0), S.roi);
     const alinor = up(npc(st, 'alinor', 'alinor', S.alinor.x, S.alinor.z, -0.3), S.alinor);
     const aldric = up(npc(st, 'aldric', 'aldric', S.aldric.x, S.aldric.z, 0.3), S.aldric);
     S.gardes.slice(0, 4).forEach((g, i) => npc(st, 'gt' + i, 'garde', g.x, g.z - 12, g.ry));

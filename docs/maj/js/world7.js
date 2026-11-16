@@ -78,8 +78,9 @@ export function buildPortAzur() {
     st.add(o, 0, 0);
   }
   horizon(st, R, { rayon: 430, mount: 0x8aa0b4 });
-  S.morgane = { x: 2.4, z: -12.4 }; S.marins = [{ x: -5.6, z: -11, ry: 0.6, k: 'marin' }, { x: 12.4, z: -9.4, ry: -0.8, k: 'marin2' }, { x: -15, z: 2, ry: 1.2, k: 'marin2' }, { x: 4, z: 14, ry: PI, k: 'citadine2' }, { x: -4.4, z: 16, ry: 2.4, k: 'citadin1' }];
-  S.tim = { x: -21.3, z: 6.0 }; S.nyssa = { x: -19.6, z: 6.0 };          // à côté de la porte, pas dedans : on entre dans l'orphelinat S.messager = { x: -14, z: 10 };
+  S.morgane = { x: 2.4, z: -12.4 }; S.marins = [{ x: -5.6, z: -11, ry: 0.6, k: 'marin' }, { x: 12.4, z: -9.4, ry: -0.8, k: 'marin2' }, { x: -9, z: -7.4, ry: 1.2, k: 'marin2' }, { x: 4, z: 14, ry: PI, k: 'citadine2' }, { x: -4.4, z: 16, ry: 2.4, k: 'citadin1' }];
+  S.tim = { x: -21.3, z: 6.0 }; S.nyssa = { x: -19.6, z: 6.0 };          // à côté de la porte, pas dedans : on entre dans l'orphelinat
+  S.messager = { x: -14, z: 10 };
   st.wall(-34, 24.4, -3, 28); st.wall(3, 24.4, 34, 28);
   st.bake();
   return st;

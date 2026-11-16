@@ -4,6 +4,7 @@
 // ============================================================
 import { Ecran, fluidite, surPause, surRetour, infosApp, ecranMaj, verifierMaj, surAnnonce, annonceMaj, texteAnnonce } from './ecran.js';   // en premier : l'interface est mise à l'échelle de l'écran avant de s'afficher
 import { E } from './engine.js';
+import * as THREE from '../lib/three.module.min.js';   // (prêté aux outils d'essai : cartes, vérification des pieds)
 import { G, newGame, load, hasSave } from './state.js';
 import { initInput, Input } from './input.js';
 import { initUI, $, pick, setFade, fade, setFastText, showHud } from './ui.js';
@@ -16,6 +17,7 @@ import { loadDecor, decorMode, setDecorMode } from './decor.js';
 import { loadMonstres } from './monstres.js';
 import { telecharger, journal } from './charge.js';
 import { creerHeros } from './perso.js';
+import './carte.js';                                        // ajoute « Carte du lieu » au menu
 import { Q, NIVEAU, NIVEAUX, ORDRE, choisirNiveau, ambiancePour, compter, compteurVoulu, reglerCompteur, puce, sansPuce, BILAN } from './qualite.js';
 
 function showError(e) {
@@ -126,7 +128,7 @@ function boot() {
   reglerCompteur(compteurVoulu());
   requestAnimationFrame(loop);
   // Outils de test (console du navigateur)
-  window.__game = { E, G, Input, BattleCfg, setFastText, debugPhase, PHASE_NAMES, newGame, showHud, Q, BILAN };
+  window.__game = { E, G, Input, BattleCfg, setFastText, debugPhase, PHASE_NAMES, newGame, showHud, Q, BILAN, THREE };
   // Les modèles (personnages, maisons, arbres…) sont téléchargés puis préparés avant l'écran titre.
   // Le téléchargement ne renonce jamais : si la connexion coupe, il attend et reprend (voir charge.js).
   const ld = $('loading'), what = $('loadWhat'), note = $('loadNote'), mo = (n) => (n / 1048576).toFixed(1).replace('.', ',');

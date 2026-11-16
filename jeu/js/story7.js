@@ -66,16 +66,19 @@ export function chapter7(T) {
 
     // ----- Nyssa s'éclipse : orphelinat -----
     let nyssaPnj = null, tim = null;
+    // Nyssa a filé ; Borin l'a dit : « Kael, va voir. Seul. » Lyra et Borin restent donc où ils sont, et Kael part sans eux.
+    // (Avant, ils le suivaient quand même, et Borin, qui suit Nyssa dans la file, partait tout seul vers le coin où elle était rangée.)
+    const attendre = (oui) => { const { lyra, borin } = P(); for (const o of [lyra, borin]) if (o) o.userData.stay = oui; };
     const cacherNyssa = () => {
       const { nyssa } = P(); if (nyssa) { nyssa.visible = false; nyssa.userData.stay = true; nyssa.position.set(-40, 0, 40); }
-      nyssaPnj = makeChar('nyssa'); st.add(nyssaPnj, S.nyssa.x, S.nyssa.z, -PI / 2);
+      attendre(true);
+      if (!nyssaPnj) { nyssaPnj = makeChar('nyssa'); st.add(nyssaPnj, S.nyssa.x, S.nyssa.z, -PI / 2); }
     };
     tim = npc(st, 'tim', 'tim', S.tim.x, S.tim.z, PI / 2, 'à Tim', async () => {
       if (!F().p7_tim) await talk([['GARÇON', "Je parle pas aux inconnus. Sauf s'ils ont des figues."]]);
       else if (!F().ch7_fin) await talk([['TIM', "Tu vas vraiment battre Varek ? Il a une cicatrice grande comme ça. Et il rit jamais."]]);
       else await talk([['TIM', "Mousse sur l'Hirondelle ! J'ai déjà appris trois nœuds. Dis à Nyssa que je travaille mes lettres."]]);
     });
-    if (F().p7_morgane && !F().p7_tim) cacherNyssa();
     st.trigger({ x1: -21, x2: -14.5, z1: 0, z2: 8, once: true, cond: () => !!F().p7_morgane && !F().p7_tim, action: async () => {
       const { kael, nyssa } = P();
       await E.walk(kael, -17.6, 5.2, 2.2); E.face(kael, S.nyssa.x, S.nyssa.z);
@@ -118,7 +121,8 @@ export function chapter7(T) {
       ]);
       await E.walk(mess, S.messager.x + 6, S.messager.z + 6, 4.5); st.remove(mess);
       st.remove(nyssaPnj); nyssaPnj = null;
-      if (nyssa) { nyssa.visible = true; nyssa.userData.stay = false; nyssa.position.set(kael.position.x - 1, 0, kael.position.z + 0.6); }
+      if (nyssa) { nyssa.visible = true; nyssa.userData.stay = false; nyssa.position.set(kael.position.x - 1, 0, kael.position.z + 0.6); nyssa.userData.gy = undefined; }
+      attendre(false);                                          // Lyra et Borin rejoignent Kael
       E.unshot(); music(st.music);
       setObjective("Entrer dans l'entrepôt des Mouettes Noires, à l'est du quai"); save();
     } });
@@ -147,8 +151,15 @@ export function chapter7(T) {
         ['CAPITAINE MORGANE', "Le gamin de la Marée. J'ai un ami, capitaine de l'Hirondelle : un marchand honnête, qui ne quitte pas le port. Il cherche un mousse."],
         ['NYSSA', "... Vous feriez ça ?"], ['CAPITAINE MORGANE', "Je le fais. Va lui dire."],
       ]);
-      E.shot([-18, 2.2, 8.5], [-21.6, 1.1, 4.2]); await sleep(300);
+      // Nyssa va le dire à Tim : on la voit devant lui, à la porte de l'orphelinat (avant, l'image montrait Tim seul pendant qu'elle parlait)
+      await fade(true, 350);
+      if (nyssa) { nyssa.visible = false; nyssa.userData.stay = true; }
+      const adieu = makeChar('nyssa'); st.add(adieu, S.nyssa.x, S.nyssa.z, -PI / 2); E.face(adieu, S.tim.x, S.tim.z); E.face(tim, S.nyssa.x, S.nyssa.z);
+      E.shot([-17.4, 2.1, 9.2], [-20.6, 1.15, 5.8]); await fade(false, 350);
       await talk([['TIM', "Tu reviens quand ?"], ['NYSSA', "Quand j'aurai sauvé le monde, paraît-il. Ça ne devrait pas être long."]]);
+      await fade(true, 350); st.remove(adieu);
+      if (nyssa) { nyssa.visible = true; nyssa.userData.stay = false; }
+      E.shot([6.5, 2.6, -8.5], [1.4, 1.5, -12.6]); await fade(false, 350);
       const n = hero('nyssa'); let appris = false;
       if (n) { while (n.level < 14) { gainXP(n, xpForNext(n.level) - n.xp); appris = true; } }
       sfx('levelup');
@@ -174,7 +185,7 @@ export function chapter7(T) {
     const pos = F().pos || (F().p7_ou === 'entrepot' ? { x: 19, z: 1 } : { x: 0, z: 21 });
     enter(st, { x: pos.x, z: pos.z, ry: F().p7_ou === 'entrepot' ? -PI / 2 : PI, yaw: F().p7_ou === 'entrepot' ? PI / 2 : 0 });
     delete F().p7_ou;
-    if (F().p7_morgane && !F().p7_tim) { const { nyssa } = P(); if (nyssa) { nyssa.visible = false; nyssa.userData.stay = true; nyssa.position.set(-40, 0, 40); } }
+    if (F().p7_morgane && !F().p7_tim) cacherNyssa();          // (partie reprise à ce moment : Nyssa est à l'orphelinat, les deux autres attendent)
     setObjective(F().ch7_fin ? 'Embarquer sur la Vouivre, au bout de la jetée' : F().p7_varek ? 'Rapporter le gouvernail à la capitaine Morgane' : F().p7_choix ? "Entrer dans l'entrepôt des Mouettes Noires, à l'est du quai" : F().p7_morgane ? "Retrouver Nyssa : elle est partie vers l'ouest du port" : 'Trouver un navire : parler aux capitaines du quai');
     if (!F().ch7_intro) {
       await chapterCard('Chapitre 7', 'Les Mouettes Noires');

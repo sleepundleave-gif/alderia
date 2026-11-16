@@ -144,7 +144,7 @@ export class Stage {
   // les pieds enfoncés dans la moindre dalle. Deux étages : « bas » (jusqu'à 45 cm, où l'on monte d'un pas) et
   // « haut » (jusqu'à 1,6 m : on n'y accède que de proche en proche, par des marches).
   releve(buckets) {
-    const b = this.bounds, M = 3, pas = (b[1] - b[0] + 2 * M) * (b[3] - b[2] + 2 * M) > 90000 ? 0.5 : 0.25;
+    const b = this.bounds, M = this.solMarge || 3, pas = (b[1] - b[0] + 2 * M) * (b[3] - b[2] + 2 * M) > 90000 ? 0.5 : 0.25;
     const x0 = b[0] - M, z0 = b[2] - M, nx = Math.ceil((b[1] - b[0] + 2 * M) / pas), nz = Math.ceil((b[3] - b[2] + 2 * M) / pas);
     const bas = new Float32Array(nx * nz), haut = new Float32Array(nx * nz); let n = 0;
     for (const [material, bk] of buckets) {
@@ -152,7 +152,7 @@ export class Stage {
       const P = bk.pos;
       for (let i = 0; i < P.length; i += 9) {
         const ay = P[i + 1], by = P[i + 4], cy = P[i + 7], y = Math.max(ay, by, cy);
-        if (y < 0.035 || y > 1.6 || y - Math.min(ay, by, cy) > 0.02) continue;                      // seulement les faces plates, près du sol
+        if (y < 0.035 || y > (this.solMax || 1.6) || y - Math.min(ay, by, cy) > 0.02) continue;                      // seulement les faces plates, près du sol
         const ax = P[i], az = P[i + 2], bx = P[i + 3], bz = P[i + 5], cx = P[i + 6], cz = P[i + 8];
         const ny = (bz - az) * (cx - ax) - (bx - ax) * (cz - az); if (ny <= 1e-6) continue;          // … tournées vers le haut
         const i1 = Math.max(0, Math.floor((Math.min(ax, bx, cx) - x0) / pas)), i2 = Math.min(nx - 1, Math.floor((Math.max(ax, bx, cx) - x0) / pas));
@@ -175,7 +175,7 @@ export class Stage {
     return h <= y + 0.5 ? h : g.bas[c];
   }
   // Hauteur où poser quelqu'un qui ne bouge pas (un habitant sur une estrade) : la plus haute dalle sous ses pieds
-  solPose(x, z) { const g = this.grille; if (!g) return 0; let h = 1e9; for (const [dx, dz] of [[0, 0], [0.18, 0], [-0.18, 0], [0, 0.18], [0, -0.18]]) h = Math.min(h, this.sol(x + dx, z + dz, 1.1)); return h; }
+  solPose(x, z) { const g = this.grille; if (!g) return 0; let h = 1e9; for (const [dx, dz] of [[0, 0], [0.18, 0], [-0.18, 0], [0, 0.18], [0, -0.18]]) h = Math.min(h, this.sol(x + dx, z + dz, 1e3)); return h; }
   remove(obj) { this.group.remove(obj); const i = this.anims.indexOf(obj); if (i >= 0) this.anims.splice(i, 1); }
   circle(x, z, r) { const c = { x, z, r }; this.colliders.push(c); return c; }
   wall(x1, z1, x2, z2) { const c = { box: true, x1: Math.min(x1, x2), z1: Math.min(z1, z2), x2: Math.max(x1, x2), z2: Math.max(z1, z2) }; this.colliders.push(c); return c; }
@@ -434,13 +434,13 @@ E.update = function (dt) {
       if (free) {
         let pousse = false;
         if (pl && pl !== f) pousse = ecarter(f, pl, 0.78) || pousse;
-        for (const g of E.followers) { if (g === f) break; pousse = ecarter(f, g, 0.74) || pousse; }
+        for (const g of E.followers) { if (g === f) break; if (g.visible) pousse = ecarter(f, g, 0.74) || pousse; }
         if (fm || pousse) resolve(st, f.position, 0.3, f);
         if (!fm && pousse && Math.hypot(f.position.x - ax, f.position.z - az) > dt * 0.6) fm = true;
       }
     }
     if (f.userData.anim) animer(f, dt, fm, t);
-    lead = f;
+    if (f.visible && !f.userData.stay) lead = f;             // un compagnon absent (caché, ou qui attend ailleurs) n'entraîne pas les suivants derrière lui
   }
 
   // Tout le monde a les pieds sur le sol (dalles, marches, estrades)

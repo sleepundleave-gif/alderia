@@ -34,6 +34,7 @@ function syncParty() {
   if (hero('borin') && !borin) borin = makeChar('borin');
   kael.userData.pose = false; kael.rotation.x = 0; kael.position.y = 0; kael.visible = true;
   for (const o of [nyssa, borin]) if (o) { o.userData.pose = false; o.userData.stay = false; o.position.y = 0; o.visible = true; }
+  if (lyra && hero('lyra')) lyra.userData.stay = false;      // (en entrant dans un lieu, personne ne reste « en attente » d'une scène du lieu d'avant)
   // Les compagnons suivent en file : Lyra, Nyssa, Borin
   E.setParty(kael, [hero('lyra') && lyra, hero('nyssa') && nyssa, hero('borin') && borin].filter(Boolean));
 }

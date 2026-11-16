@@ -18,6 +18,7 @@ Puis ouvrir `http://localhost:8000` dans un navigateur.
 | Parler, ouvrir, valider | E, Espace ou Entrée | bouton A |
 | Tourner la caméra | glisser la souris | glisser le doigt |
 | Menu (équipe, objets) | M ou Échap | bouton ☰ |
+| Carte du lieu | menu → « Carte du lieu » | menu ☰ → « Carte du lieu » |
 | En combat | flèches + Entrée, ou clic | toucher les boutons |
 
 ## Ce qui est jouable

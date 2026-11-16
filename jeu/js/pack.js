@@ -296,6 +296,34 @@ export function makeHero(o = {}) {
   u.stop = () => { if (one) { one.fadeOut(0.2); one = null; } };
   // Pour les essais et les scènes figées : met le personnage à l'instant t d'un clip
   u.poseAt = (name, t = 1e9) => { mixer.stopAllAction(); one = null; base0 = null; const a = act(name); a.reset().setEffectiveWeight(1).play(); a.time = Math.min(t, CLIP[name].duration - 0.001); mixer.update(0); u.pose = true; frozen = true; };
+  // Grimper à une échelle. Aucun clip de la bibliothèque ne le fait : on part du personnage debout et on tourne ses bras et ses
+  // jambes vers les barreaux, main gauche et pied droit ensemble, puis l'inverse. « phase » avance d'un tour par deux barreaux.
+  // Les directions sont données dans le repère du personnage (x : sa gauche, y : le haut, z : devant lui).
+  let debout = null;
+  u.grimper = (phase) => {
+    if (!debout) {
+      mixer.stopAllAction(); one = null; base0 = null; const a = act('Idle_Loop'); a.reset().setEffectiveWeight(1).play(); a.time = 0; mixer.update(0);
+      debout = GRIMPE.map((n) => [bone[n], bone[n] && bone[n].quaternion.clone()]).filter(([b]) => b);
+    }
+    u.pose = true; frozen = true; blob.visible = false;        // (pas d'ombre ronde sous les pieds : ils sont en l'air)
+    for (const [b, q] of debout) b.quaternion.copy(q);
+    g.updateMatrixWorld(true); g.getWorldQuaternion(Q_G);
+    const viser = (n, n2, x, y, z) => {
+      const b = bone[n], c = bone[n2]; if (!b || !c) return;
+      b.getWorldPosition(V_A); c.getWorldPosition(V_B); V_B.sub(V_A).normalize(); V_C.set(x, y, z).normalize().applyQuaternion(Q_G);
+      Q_D.setFromUnitVectors(V_B, V_C); b.parent.getWorldQuaternion(Q_P); b.getWorldQuaternion(Q_B);
+      b.quaternion.copy(Q_P.invert()).multiply(Q_D).multiply(Q_B); b.updateMatrixWorld(true);
+    };
+    const m = (a, b, k) => a + (b - a) * k, onde = Math.sin(phase * Math.PI * 2);
+    for (const [c, s] of [['l', 1], ['r', -1]]) {
+      const h = 0.5 + 0.5 * onde * s, j = 1 - h;                 // h : la main de ce côté est haute ; j : le genou de ce côté est levé
+      viser('upperarm_' + c, 'lowerarm_' + c, s * 0.22, m(-0.35, 0.6, h), 0.8);
+      viser('lowerarm_' + c, 'hand_' + c, -s * 0.05, m(0.7, 0.92, h), m(0.7, 0.4, h));
+      viser('thigh_' + c, 'calf_' + c, s * 0.08, m(-1, -0.3, j), m(0.1, 0.95, j));
+      viser('calf_' + c, 'foot_' + c, 0, -1, m(-0.1, -0.22, j));
+    }
+  };
+  u.finGrimper = () => { debout = null; u.pose = false; blob.visible = true; };
   u.anim = (dt, moving, t) => {
     if (u.pose) return;
     if (frozen) { mixer.stopAllAction(); frozen = false; base0 = null; one = null; }
@@ -313,6 +341,9 @@ export function makeHero(o = {}) {
   u.anim(0.016 + Math.random() * 2, false, 0);
   return g;
 }
+
+const GRIMPE = ['upperarm_l', 'lowerarm_l', 'upperarm_r', 'lowerarm_r', 'thigh_l', 'calf_l', 'thigh_r', 'calf_r'];
+const V_A = new THREE.Vector3(), V_B = new THREE.Vector3(), V_C = new THREE.Vector3(), Q_G = new THREE.Quaternion(), Q_D = new THREE.Quaternion(), Q_P = new THREE.Quaternion(), Q_B = new THREE.Quaternion();
 
 // ---------- Les personnages du jeu ----------
 // fem, outfit (Peasant | Ranger), variant (1 | 2 : jeu de couleurs), tint (teinte des vêtements), skin (light | dark), skinTint,
@@ -371,7 +402,7 @@ export const HEROES3D = {
   morgane: { fem: true, outfit: 'Ranger', variant: 2, dye: 0x2a6a8a, hair: 'Long', hairTex: 1, hairTint: 0x8a2a1a, height: 1.76, weapon: 'sword', sheathed: true, scarf: 0xe8c040 },
   tim:     { outfit: 'Peasant', dye: 0x7a9ab0, hair: 'SimpleParted', hairTint: 0x2a1c14, skin: 'dark', height: 1.2, headScale: 1.2 },
   marin:   { outfit: 'Peasant', dye: 0x3a6a9a, hair: 'Buzzed', hairTint: 0x5a4030, beard: true, height: 1.78, wide: 1.08 },
-  marin2:  { outfit: 'Peasant', variant: 2, dye: 0xd8d0b8, skin: 'dark', hair: 'Buzzed', hairTint: 0x1a1414, height: 1.82, scarf: 0xc22b2b },
+  marin2:  { outfit: 'Peasant', variant: 2, dye: 0xd8d0b8, skin: 'dark', hair: 'Buzzed', hairTint: 0x1a1414, height: 1.82, scarf: 0x2f5d8a },      // (foulard bleu : le rouge le faisait prendre pour Nyssa)
   poissonniere: { fem: true, outfit: 'Peasant', dye: 0x4aa0a0, hair: 'Buns', hairTint: 0x6a4630, height: 1.64, wide: 1.1 },
   messager: { outfit: 'Ranger', variant: 2, dye: 0x2a2a34, hood: true, height: 1.72, scarf: 0x1a1a1a, bracer: false },
   coupe_jarret: { outfit: 'Ranger', variant: 2, dye: 0x3a3a44, hair: 'Buzzed', hairTint: 0x1a1414, beard: true, height: 1.8, weapon: 'dagger', scarf: 0x1a1a1a },

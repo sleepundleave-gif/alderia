@@ -56,11 +56,13 @@ function blason(st, x, y, z, ry = 0, s = 1) {
   for (let i = 0; i < 8; i++) { const a = i * PI / 4, r = box(0.1 * s, 0.34 * s, 0.05, 0xffffff, Math.sin(a) * 0.52 * s, 0.25 * s + Math.cos(a) * 0.52 * s, 0.03); r.rotation.z = -a; g.add(r); }
   g.position.set(x, y, z); g.rotation.y = ry; st.staticGroup.add(g); return g;
 }
-function ladder(st, x, z, h, ry = 0, y0 = 0) {
-  const g = new THREE.Group();
-  for (const s of [-1, 1]) g.add(box(0.08, h, 0.08, 0x7a5a36, 0.28 * s, h / 2, 0));
-  for (let y = 0.35; y < h; y += 0.4) g.add(box(0.56, 0.06, 0.06, 0x8a6a40, 0, y, 0));
-  g.position.set(x, y0, z); g.rotation.y = ry; g.rotation.x = -0.12; st.staticGroup.add(g); return g;
+// Échelle : (x, z) est le pied ; elle penche de « pente » radians vers le mur, c'est-à-dire vers l'arrière de la direction ry.
+// (Avant, la pente était tournée autour du mauvais axe quand ry valait un quart de tour : l'échelle penchait de côté, le long du mur.)
+function ladder(st, x, z, h, ry = 0, y0 = 0, pente = 0.12) {
+  const g = new THREE.Group(), e = new THREE.Group(); g.add(e); e.rotation.x = -pente;
+  for (const s of [-1, 1]) e.add(box(0.08, h, 0.08, 0x7a5a36, 0.28 * s, h / 2, 0));
+  for (let y = 0.35; y < h; y += 0.4) e.add(box(0.56, 0.06, 0.06, 0x8a6a40, 0, y, 0));
+  g.position.set(x, y0, z); g.rotation.y = ry; st.staticGroup.add(g); return g;
 }
 // Statue d'un des Sept (fontaine) ; « worn » : le visage effacé
 function septStatue(worn) {
@@ -201,7 +203,11 @@ export function buildSolmeria() {
   for (const [x, z] of [[-22, 9], [22, 9], [-22, -27], [22, -27], [-8.4, 31.6], [8.4, 21.4]]) { C(st, mBlancS(), 1.1, 0.7, x, 0.35, z); st.deco(makeTree('round', 0.75), x, z, R() * 6, 0.5); st.circle(x, z, 1.15); }
 
   // ----- L'échelle des toits et le quai des Lavandières -----
-  ladder(st, 25.3, -17.5, 7.5, -PI / 2); S.echelle = { x: 24.4, z: -17.5 };
+  // Le pied est sur la place, à 1,50 m du bord du toit ; l'échelle s'appuie sur ce bord (à 5,60 m) et le dépasse de trois barreaux.
+  // (Avant, elle était plantée contre la façade, 1 m derrière le bord du toit : elle traversait le toit, on n'en voyait que le bas.)
+  { const bx = 22.8, bz = -16.5, pente = Math.atan2(1.5, 5.6);
+    ladder(st, bx, bz, 6.7, -PI / 2, 0, pente); st.circle(bx + 0.25, bz, 0.42);
+    S.echelle = { x: bx - 0.55, z: bz, pied: { x: bx - 0.2, z: bz }, haut: { x: bx + 1.48, y: 5.75, z: bz }, ry: PI / 2 }; }
   // bouche d'égout : margelle ronde, grille, escalier qui s'enfonce
   C(st, mBlancS(), 1.7, 0.5, -30, 0.25, -40.4); const trou = new THREE.Mesh(new THREE.CircleGeometry(1.35, 20), mat(0x0a100c, { basic: true })); trou.rotation.x = -PI / 2; trou.position.set(-30, 0.51, -40.4); st.staticGroup.add(trou);
   for (let i = 0; i < 5; i++) st.staticGroup.add(box(0.07, 0.07, 2.7, 0x3a3a40, -31.1 + i * 0.55, 0.56, -40.4));
@@ -261,7 +267,7 @@ export function buildToits() {
     for (let i = 0; i < n; i++) st.staticGroup.add(box(1.1, 1.0, 0.04, [0xf4f0e8, 0xc04a3a, 0x4a7ac0, 0xf0e0a0, 0x6aa86a][(i + c0) % 5], x + i * 1.5, 1.75, z));
   }
   for (const [x, z] of [[2.6, 42], [-5.6, 23], [6.4, -8.6]]) st.prop(makeCrate(), x, z, R() * 6, 0.55);
-  ladder(st, 0, 44.3, 3, PI, -2.4);
+  ladder(st, 0, 44.3, 3, 0, -2.4);
   ladder(st, 1, -28.3, 3, 0, -2.4);
   S.depart = { x: 0, z: 42 }; S.coffre = { x: -23.2, z: 26 }; S.fin = { x: 1, z: -26.6 };
   S.nyssa = [{ x: 0, z: 31.5 }, { x: -6, z: 19 }, { x: -18, z: 11 }, { x: -11, z: -1 }, { x: 1, z: -9 }, { x: 1, z: -26 }];
@@ -308,7 +314,7 @@ export function buildEgouts() {
   lamp(-2.9, -27.5, PI / 2); lamp(2.9, -41, -PI / 2, true); lamp(-9.9, -33.5, PI / 2);
   lamp(-12.9, -50, PI / 2, true); lamp(12.9, -50, -PI / 2); lamp(-12.9, -64, PI / 2); lamp(12.9, -64, -PI / 2, true);
   // Entrée : échelle, petite statue, graffiti
-  ladder(st, 0, 9.85, 4.2, PI); S.echelle = { x: 0, z: 8.8 };
+  ladder(st, 0, 9.4, 4.2, PI); S.echelle = { x: 0, z: 8.8 };
   const aube = makeStatue(); aube.scale.setScalar(0.62); st.add(aube, -3.6, 2.2, PI / 4); st.circle(-3.6, 2.2, 0.6); S.statue = { x: -3.6, z: 2.2 };
   for (const [y, w] of [[2.3, 1.7], [2.0, 2.1], [1.7, 1.3]]) st.staticGroup.add(box(0.03, 0.14, w, 0xf0e8c8, 4.98, y, 5.2 + (2.1 - w) / 2 - 1.6));
   S.graffiti = { x: 4.2, z: 4.4 };
@@ -335,7 +341,7 @@ export function buildEgouts() {
   const goo = mat(0x7aba3a, { emissive: 0x2a5a10 });
   for (const [x, y, z, s] of [[0, 0.5, -66.2, 1.3], [-0.5, 1.2, -66.4, 0.9], [0.5, 1.5, -66.4, 0.8], [0, 0.15, -65.6, 1.6]]) { const b = sph(s, goo, x, y, z, { smooth: true }); b.scale.set(s, s * 0.6, s * 0.5); st.staticGroup.add(b); }
   S.nyssa = { x: 0, z: -66.1 }; S.boss = { x: 0, z: -57 }; S.sortie = { x: 11.6, z: -57 };
-  ladder(st, 12.85, -57, 4.4, -PI / 2);
+  ladder(st, 12.4, -57, 4.4, -PI / 2);
   st.bake();
   return st;
 }
@@ -372,10 +378,15 @@ export function buildTrone() {
   for (let i = 0; i < 7; i++) B(st, mMarbre(0xf4f2ee), 12 - i * 0.9, 0.25, 7.6 - i * 0.62, 0, 0.125 + i * 0.25, -37.7 - i * 0.31);
   st.wall(-6.2, -42, 6.2, -33.9);
   const ty = 1.75;
-  B(st, mMarbre(), 1.5, 0.55, 1.3, 0, ty + 0.28, -39.2); B(st, mMarbre(), 1.7, 3.4, 0.35, 0, ty + 1.7, -39.95);
-  for (const s of [-1, 1]) { B(st, mMarbre(), 0.3, 1.1, 1.3, s * 0.9, ty + 0.55, -39.2); st.staticGroup.add(sph(0.4, 0xf0d060, s * 0.9, ty + 1.25, -38.6)); }
-  st.staticGroup.add(box(1.2, 0.1, 1.0, 0x2a4aa8, 0, ty + 0.6, -39.15)); const top = sph(0.9, 0xf0d060, 0, ty + 3.6, -39.95, { emissive: 0x806010 }); top.scale.z = 0.25; st.staticGroup.add(top);
-  S.roi = { x: 0, y: ty + 0.02, z: -39.0 }; S.alinor = { x: 2.6, y: 1.25, z: -37.4 }; S.aldric = { x: -2.6, y: 1.25, z: -37.4 };
+  // Le trône est à la taille d'un homme assis : assise à 44 cm, bord de l'assise juste derrière les mollets, accoudoirs à hauteur de coude.
+  // (Avant, l'assise montait à 65 cm et avançait de 45 cm devant le roi : ses cuisses et ses jambes étaient DANS le bloc, on ne voyait qu'un buste.)
+  B(st, mMarbre(), 1.5, 0.36, 0.78, 0, ty + 0.18, -39.41); B(st, mMarbre(), 1.7, 3.4, 0.35, 0, ty + 1.7, -39.95);
+  for (const s of [-1, 1]) { B(st, mMarbre(), 0.3, 0.78, 0.84, s * 0.9, ty + 0.39, -39.38); st.staticGroup.add(sph(0.36, 0xf0d060, s * 0.9, ty + 0.92, -39.02)); }
+  st.staticGroup.add(box(1.2, 0.08, 0.74, 0x2a4aa8, 0, ty + 0.4, -39.4)); st.staticGroup.add(box(1.2, 1.3, 0.28, 0x2a4aa8, 0, ty + 1.09, -39.64)); const top = sph(0.9, 0xf0d060, 0, ty + 3.6, -39.95, { emissive: 0x806010 }); top.scale.z = 0.25; st.staticGroup.add(top);
+  // Le roi a les pieds sur le haut de l'estrade ; sa fille et son conseiller sont debout de part et d'autre du trône, sur la même dalle.
+  // Aucune hauteur n'est écrite ici : le moteur pose chacun sur la marche qui est sous ses pieds (et la lui fait descendre quand il marche).
+  st.solMax = 1.8; st.solMarge = 9;                           // (l'estrade est haute de 1,75 m et dépasse de 8 m la zone où marche le joueur : elle compte quand même comme un sol)
+  S.roi = { x: 0, z: -39.0 }; S.roiDebout = { x: 0, z: -38.2 }; S.alinor = { x: 2.3, z: -38.6 }; S.aldric = { x: -2.3, z: -38.6 };
   S.gardes = []; for (let i = 0; i < 4; i++) for (const s of [-1, 1]) S.gardes.push({ x: s * 4.4, z: -7 - i * 6.4, ry: -s * PI / 2 });
   S.nobles = [{ x: -8.2, z: -12, ry: PI / 2 }, { x: -8.2, z: -14, ry: PI / 2 }, { x: 8.2, z: -20, ry: -PI / 2 }, { x: 8.2, z: -22.2, ry: -PI / 2 }];
   if (decorReady()) {

@@ -41,7 +41,7 @@ function preparer(g, reel) {
     if (mt.alphaTest) { mt.alphaTest = reel ? 0.3 : 0.4; mt.side = THREE.DoubleSide; }
     for (const k of ['map', 'normalMap', 'roughnessMap']) if (mt[k]) mt[k].anisotropy = 4;
     if (/Leaves|Leaf|Grass|Flowers|Vine/.test(mt.name)) { mt.roughness = 1; mt.metalness = 0; mt.normalMap = null; }
-    if (/Glass/.test(mt.name)) { mt.transparent = false; mt.color.set(0x6f9ac0); mt.roughness = 0.15; mt.metalness = 0.3; }
+    if (/Glass/.test(mt.name)) { mt.transparent = false; mt.color.set(0x6f9ac0); mt.roughness = 0.15; mt.metalness = 0.3; mt.side = THREE.DoubleSide; }      // (vitre visible des deux côtés : sinon, du dehors, le carreau était un trou)
   });
 }
 export async function loadDecor(onProgress) {
@@ -137,6 +137,7 @@ export function wallMat(kind, color = 0xffffff, tile = 3, o = {}) {
 }
 
 // ---------- Maisons ----------
+const NOYAU = new THREE.MeshLambertMaterial({ color: 0x222a34 });          // l'ombre d'une pièce vue du dehors
 const ROOFS = { 4: [4, 6], 6: [6, 8, 10, 12], 8: [8, 10, 12, 14] }, RIDGE = { 4: 3.7, 6: 4.9, 8: 6.0 };
 const burn = (m) => { m.color.multiply(new THREE.Color(0x6a5a52)); };
 // w × d : emprise au sol ; la porte est sur la façade +z. « dark » : version incendiée.
@@ -153,10 +154,11 @@ export function kitHouse(w, d, h, o = {}) {
     const n = len / 2;
     for (let f = 0; f < floors; f++) for (let i = 0; i < n; i++) {
       const u = -len / 2 + 1 + i * 2, m = new THREE.Group(); m.position.set(at[0] + Math.cos(ry) * u, f * 3, at[1] - Math.sin(ry) * u); m.rotation.y = ry; k.add(m);
-      if (f === 0 && i === door) { porte = { x: m.position.x, z: m.position.z, nx: Math.sin(ry), nz: Math.cos(ry) }; const round = !!o.round; m.add(piece(wall(round ? 'Door_Round' : 'Door_Flat'))); m.add(piece(round ? 'Door_1_Round' : pick(['Door_1_Flat', 'Door_2_Flat']), -0.55, 0, -0.05)); }
+      if (f === 0 && i === door) { porte = { x: m.position.x, z: m.position.z, nx: Math.sin(ry), nz: Math.cos(ry) }; const round = !!o.round; m.add(piece(wall(round ? 'Door_Round' : 'Door_Flat'))); const battant = piece(round ? 'Door_1_Round' : pick(['Door_1_Flat', 'Door_2_Flat']), -0.583, 0, -0.05);
+        battant.scale.set(1.143, round ? 1.05 : 1.005, 1); m.add(battant); }      // le battant remplit toute l'ouverture (1,28 m) : porte FERMÉE, aucun jour sur les côtés
       else if ((front || (i + f) % 2 === 0) && !(f === 0 && !front && i === 0 && n > 2)) {
         const round = (i + f) % 3 === 0; m.add(piece(wall(round ? 'Window_Wide_Round' : 'Window_Wide_Flat'))); m.add(piece(round ? 'Window_Wide_Round1' : 'Window_Wide_Flat1'));
-        if (!o.dark && (front || i % 2 === 0)) m.add(piece(round ? 'WindowShutters_Wide_Round_Open' : 'WindowShutters_Wide_Flat_Open'));
+        if (!o.dark && (front || i % 2 === 0) && (front || (i > 0 && i < n - 1))) m.add(piece(round ? 'WindowShutters_Wide_Round_Open' : 'WindowShutters_Wide_Flat_Open'));      // (pas de volets ouverts au bout d'un mur de côté : ils dépassaient de l'angle de la maison, dans le vide)
       } else m.add(piece(o.brick ? wall('Straight') : (i + f) % 2 ? 'Wall_Plaster_WoodGrid' : 'Wall_Plaster_Straight'));
     }
   };
@@ -166,6 +168,9 @@ export function kitHouse(w, d, h, o = {}) {
   side(D, [W / 2, 0], Math.PI / 2, gable ? -1 : doorI(D), !gable);      // long côté (+x du kit)
   side(D, [-W / 2, 0], -Math.PI / 2, -1, false);
   for (const [x, z] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) for (let f = 0; f < floors; f++) k.add(piece('Corner_Exterior_Wood', x * W / 2, f * 3, z * D / 2));
+  // L'intérieur n'existe pas ici (on entre par la porte, dans une scène à part) : un bloc sombre remplit la maison, juste derrière les murs.
+  // Sans lui, on voyait à travers les fenêtres jusqu'aux fenêtres d'en face et à la rue de l'autre côté.
+  { const noyau = new THREE.Mesh(new THREE.BoxGeometry(W - 0.3, top + 0.3, D - 0.3), NOYAU); noyau.position.set(0, (top + 0.3) / 2 - 0.02, 0); noyau.userData.noyau = true; k.add(noyau); }
   k.add(piece('Roof_RoundTiles_' + W + 'x' + D, 0, top, 0));
   k.add(piece('Roof_Front_Brick' + W, 0, top, D / 2)); k.add(piece('Roof_Front_Brick' + W, 0, top, -D / 2, Math.PI));
   let chem = null;
