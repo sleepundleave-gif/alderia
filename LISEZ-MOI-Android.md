@@ -1,6 +1,6 @@
 # Aldéria sur Android
 
-Le fichier à installer : **`Alderia.apk`** (20,8 Mo, application 1.4, jeu version 14). Il contient tout le jeu (chapitres 1 à 10, modèles, sons) : une fois installé, il fonctionne **sans connexion**.
+Le fichier à installer : **`Alderia.apk`** (20,8 Mo, application 1.4.1, jeu version 15). Il contient tout le jeu (chapitres 1 à 10, modèles, sons) : une fois installé, il fonctionne **sans connexion**.
 
 ## Sur GitHub
 
@@ -11,7 +11,7 @@ Le fichier à installer : **`Alderia.apk`** (20,8 Mo, application 1.4, jeu versi
 **Comment les joueurs sont prévenus.** À partir de l'application 1.3, à chaque lancement avec une connexion, le jeu regarde sur GitHub s'il existe une version plus récente. S'il y en a une, l'écran titre affiche « ★ Nouvelle version » et le bouton « Mises à jour » s'allume ; le joueur touche Mises à jour → Chercher en ligne et la nouveauté s'installe. Rien ne se télécharge sans son accord, et sans connexion le jeu se lance comme d'habitude.
 
 **Les anciennes applications (1.0, 1.1, 1.2)** ne regardent pas Internet d'elles-mêmes : on ne peut rien leur envoyer à distance. Deux façons de les mettre à niveau, une seule fois :
-- installer `Alderia.apk` 1.4 par-dessus (le mieux : ensuite tout est annoncé automatiquement) ;
+- installer `Alderia.apk` 1.4.1 par-dessus (le mieux : ensuite tout est annoncé automatiquement) ;
 - ou, dans l'ancienne application : Mises à jour → taper `https://sleepundleave-gif.github.io/alderia/maj/` → Chercher en ligne. Le jeu se met à jour, mais cette ancienne application ne préviendra toujours pas d'elle-même.
 
 **Publier une nouvelle version** (nouveau chapitre, correction) :

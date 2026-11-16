@@ -534,7 +534,7 @@ async function chooseAction(c, canBack) {
       return { type: 'skill', skill: ids[s], target: t };
     }
     else if (r === 2) {
-      const ids = Object.keys(G.inv).filter(id => ['heal', 'mp', 'dmg', 'cure'].includes(ITEMS[id].use));
+      const ids = Object.keys(G.inv).filter(id => ITEMS[id] && ['heal', 'mp', 'dmg', 'cure'].includes(ITEMS[id].use));      // (le sac contient aussi des équipements de rechange)
       const reserved = (id) => B.pending.filter(p => p && p.type === 'item' && p.item === id).length;
       const s = await pick($('bMenu'), ids.map(id => ({ label: ITEMS[id].name, right: '×' + (G.inv[id] - reserved(id)), sub: ITEMS[id].desc, disabled: G.inv[id] - reserved(id) <= 0 })), { header: `<div class="who">Objets</div>${ids.length ? '' : '<div style="margin:6px">Le sac est vide.</div>'}`, cancel: true });
       if (s === -1) continue;

@@ -209,11 +209,15 @@ export async function openMenu(extra = {}) {
 
 async function itemMenu(box) {
   while (true) {
-    const ids = Object.keys(G.inv);
+    // Le sac contient aussi des équipements de rechange (les anciennes dagues de Nyssa…) : ils ne sont pas dans ITEMS.
+    // On les montre, grisés ; un identifiant inconnu (vieille sauvegarde) ne doit jamais faire planter le menu.
+    const fiche = (id) => ITEMS[id] || (EQUIP[id] ? { name: EQUIP[id].name, desc: 'Équipement de rechange' } : { name: id, desc: '' });
+    const ids = Object.keys(G.inv).filter(id => G.inv[id] > 0);
     box.innerHTML = `<h3>Objets</h3>${ids.length ? '' : '<p>Le sac est vide.</p>'}<div id="mList"></div>`;
-    const r = await pick($('mList'), ids.map(id => ({ label: ITEMS[id].name, right: '×' + G.inv[id], sub: ITEMS[id].desc, disabled: !ITEMS[id].field })), { cancel: true });
+    const r = await pick($('mList'), ids.map(id => { const f = fiche(id); return { label: f.name, right: '×' + G.inv[id], sub: f.desc, disabled: !f.field }; }), { cancel: true });
     if (r === -1) return;
-    const id = ids[r], it = ITEMS[id];
+    const id = ids[r], it = fiche(id);
+    if (!it.field) continue;
     box.innerHTML = `<h3>${it.name} — pour qui ?</h3><div id="mList"></div>`;
     const t = await pick($('mList'), G.party.map(h => { const s = heroStats(h); return { label: HEROES[h.id].name, right: `PV ${h.hp}/${s.maxHp} · PM ${h.mp}/${s.maxMp}` }; }), { cancel: true });
     if (t === -1) continue;

@@ -1,2 +1,2 @@
-14
-Carte du lieu dans le menu · corrections du château, des maisons et du port
+15
+Correctif : le menu Objets ne donne plus d'erreur

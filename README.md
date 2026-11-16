@@ -4,7 +4,7 @@ Un jeu de rôle fantasy au tour par tour, en 3D, pour **téléphone Android**. C
 
 ## Télécharger
 
-**[⬇ Télécharger Alderia.apk](https://github.com/sleepundleave-gif/alderia/releases/latest/download/Alderia.apk)** — application 1.4, jeu version 14 (20,8 Mo)
+**[⬇ Télécharger Alderia.apk](https://github.com/sleepundleave-gif/alderia/releases/latest/download/Alderia.apk)** — application 1.4.1, jeu version 15 (20,8 Mo)
 
 Page de téléchargement à partager : https://sleepundleave-gif.github.io/alderia/
 
